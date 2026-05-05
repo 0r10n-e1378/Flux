@@ -1,25 +1,15 @@
 package entities;
 
+import math.Vector;
+
 public class Entity {
 	
-	private int xPos, yPos, radius;
+	protected int radius;
+	protected Vector position;
 	
-	public Entity (int xPos, int yPos, int radius) {
-		this.xPos = xPos;
-		this.yPos = yPos;
+	public Entity (double x, double y, int radius) {
+		position = new Vector(x, y);
 		this.radius = radius;	
-	}
-	
-	public int getX () {
-		return xPos;
-	}
-	
-	public int getY () {
-		return yPos;
-	}
-	
-	public int getRadius () {
-		return radius;
 	}
 	
 	public void draw () {

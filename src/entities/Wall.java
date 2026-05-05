@@ -2,7 +2,7 @@ package entities;
 
 public class Wall extends Entity{
 
-	public Wall (int xPos, int yPos, int radius) {
+	public Wall (double xPos, double yPos, int radius) {
 		super(xPos, yPos, radius);
 	}
 	

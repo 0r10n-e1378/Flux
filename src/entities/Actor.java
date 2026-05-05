@@ -1,26 +1,29 @@
 package entities;
 
+import math.Vector;
+
 public class Actor extends Entity{
 
-	private int acceleration, health, maxSpeed;
+	protected double maxSpeed, maxForce;
+	protected Vector velocity, acceleration;
 	
-	public Actor (int xPos, int yPos, int radius, int acceleration, int health, int maxSpeed) {
-		super(xPos, yPos, radius);
+	public Actor (double x, double y, int radius, Vector velocity, Vector acceleration) {
+		super(x, y, radius);
+		maxSpeed = 4.0;
+		maxForce = 0.1;
+		this.velocity = velocity;
 		this.acceleration = acceleration;
-		this.health = health;
-		this.maxSpeed = maxSpeed;
 	}
 	
-	public int getAcceleration () {
-		return acceleration;
+	public void update () {
+		velocity.add(acceleration);
+		velocity.recalculate(maxSpeed);
+		position.add(velocity);
+		acceleration.multiply(0);
 	}
 	
-	public int getHealth () {
-		return health;
-	}
-	
-	public int getMaxSpeed () {
-		return maxSpeed;
+	public void push (Vector v) {
+		acceleration.add(v);
 	}
 	
 }
