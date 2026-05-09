@@ -200,15 +200,15 @@ public class MapGenerator {
             long currentTime = System.currentTimeMillis();
             long gameTime = currentTime - gameStartTime;
             
-            // Reduce spawn interval over time (minimum 3 seconds)
-            enemySpawnInterval = Math.max(3000, 12000 - (gameTime / 1000) * 50); // Reduce by 50ms per second
+            // Reduce spawn interval over time (minimum 2 seconds) - faster ramp up
+            enemySpawnInterval = Math.max(2000, 12000 - (gameTime / 1000) * 100); // Reduce by 100ms per second
             
             if (currentTime - lastEnemySpawnTime >= enemySpawnInterval) {
                 enemySwarmCount++;
                 lastEnemySpawnTime = currentTime;
                 
-                // Every 10 waves, spawn a boss
-                if (enemySwarmCount % 10 == 0) {
+                // Every 7 waves, spawn a boss
+                if (enemySwarmCount % 7 == 0) {
                     // Spawn boss
                     int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                     int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
@@ -228,6 +228,33 @@ public class MapGenerator {
                     bossVel.multiply(1.5);
                     
                     bossBoids.add(new BossBoid(bossId, centerX, centerY, 25, bossVel, new Vector(0, 0)));
+                    
+                    // Spawn 15 enemy boids around the boss
+                    for (int i = 0; i < 15; i++) {
+                        double angle = rand.nextDouble() * Math.PI * 2;
+                        double distance = 30 + rand.nextDouble() * 50;
+                        int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                        int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                        
+                        // Ensure enemy doesn't spawn inside a wall
+                        int enemyAttempts = 0;
+                        while (collidesWithWall(x, y, 10) && enemyAttempts < 10) {
+                            angle = rand.nextDouble() * Math.PI * 2;
+                            distance = 30 + rand.nextDouble() * 50;
+                            x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                            y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                            enemyAttempts++;
+                        }
+                        
+                        String boidId = "boss-enemy-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
+                        if (removedEnemyBoidIds.contains(boidId)) {
+                            continue;
+                        }
+                        Vector eVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                        eVel.normalize();
+                        eVel.multiply(2.0);
+                        enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                    }
                 } else {
                     // Regular enemy swarm
                     if (enemySwarmCount % 5 == 0) {

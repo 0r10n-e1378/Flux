@@ -181,12 +181,12 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                 normal.update(allBoids, mapGenerator);
             }
 
-            ArrayList<BossBoid> loadedBosses = mapGenerator.getLoadedBossBoids();
+            ArrayList<BossBoid> loadedBosses = new ArrayList<>(mapGenerator.getLoadedBossBoids());
             for (BossBoid boss : loadedBosses) {
                 boss.update(new ArrayList<>(loadedEnemies), commander, mapGenerator);
             }
 
-            for (EnemyBoid enemy : loadedEnemies) {
+            for (EnemyBoid enemy : new ArrayList<>(loadedEnemies)) {
                 // If there are bosses, flock to them; otherwise chase commander
                 if (!loadedBosses.isEmpty()) {
                     BossBoid nearestBoss = loadedBosses.get(0);
@@ -208,14 +208,15 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             ArrayList<Minion> minionsToRemove = new ArrayList<>();
             ArrayList<BossBoid> bossesToRemove = new ArrayList<>();
             
-            for (EnemyBoid enemy : loadedEnemies) {
+            // Handle enemy collisions
+            for (EnemyBoid enemy : new ArrayList<>(loadedEnemies)) {
                 double distCommander = Vector.distance(enemy.getPosition(), commander.getPosition());
                 if (distCommander < enemy.getRadius() + commander.getRadius()) {
                     enemiesToRemove.add(enemy);
                     commander.takeDamage(1);
                     continue;
                 }
-                for (Minion minion : minions) {
+                for (Minion minion : new ArrayList<>(minions)) {
                     double dist = Vector.distance(enemy.getPosition(), minion.getPosition());
                     if (dist < enemy.getRadius() + minion.getRadius()) {
                         enemiesToRemove.add(enemy);
@@ -227,7 +228,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             }
             
             // Handle boss collisions
-            for (BossBoid boss : loadedBosses) {
+            for (BossBoid boss : new ArrayList<>(loadedBosses)) {
                 double distCommander = Vector.distance(boss.getPosition(), commander.getPosition());
                 if (distCommander < boss.getRadius() + commander.getRadius()) {
                     boss.takeDamage(1);
@@ -239,7 +240,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                     }
                     continue;
                 }
-                for (Minion minion : minions) {
+                for (Minion minion : new ArrayList<>(minions)) {
                     double dist = Vector.distance(boss.getPosition(), minion.getPosition());
                     if (dist < boss.getRadius() + minion.getRadius()) {
                         boss.takeDamage(1);
@@ -354,20 +355,21 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             if (mapGenerator != null) {
                 mapGenerator.draw(g, camera);
             }
-            ArrayList<NormalBoid> loadedNormals = mapGenerator.getLoadedNormalBoids();
+            ArrayList<NormalBoid> loadedNormals = new ArrayList<>(mapGenerator.getLoadedNormalBoids());
             for (NormalBoid normal : loadedNormals) {
                 normal.draw(g, camera);
             }
-            ArrayList<EnemyBoid> loadedEnemies = mapGenerator.getLoadedEnemyBoids();
+            ArrayList<EnemyBoid> loadedEnemies = new ArrayList<>(mapGenerator.getLoadedEnemyBoids());
             for (EnemyBoid enemy : loadedEnemies) {
                 enemy.draw(g, camera);
             }
-            ArrayList<BossBoid> loadedBosses = mapGenerator.getLoadedBossBoids();
+            ArrayList<BossBoid> loadedBosses = new ArrayList<>(mapGenerator.getLoadedBossBoids());
             for (BossBoid boss : loadedBosses) {
                 boss.draw(g, camera);
             }
             if (minions != null) {
-                for (Minion minion : minions) {
+                ArrayList<Minion> minionsCopy = new ArrayList<>(minions);
+                for (Minion minion : minionsCopy) {
                     minion.draw(g, camera);
                 }
             }

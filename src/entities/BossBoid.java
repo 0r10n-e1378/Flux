@@ -38,21 +38,10 @@ public class BossBoid extends Boid {
     }
 
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
-        ArrayList<Boid> flockAsBoids = new ArrayList<>(flock);
-
-        Vector s = separate(flockAsBoids);
-        Vector a = align(flockAsBoids);
-        Vector c = cohere(flockAsBoids);
+        // Boss only targets commander, not affected by flock
         Vector chase = seek(commander.getPosition());
+        chase.multiply(1.5); // Moderate chase strength
 
-        s.multiply(3.5);
-        a.multiply(0.7);
-        c.multiply(0.4);
-        chase.multiply(1.5); // Less aggressive chase
-
-        push(s);
-        push(a);
-        push(c);
         push(chase);
         push(avoidWalls(mapGenerator));
 
@@ -67,10 +56,31 @@ public class BossBoid extends Boid {
             Vector testY = new Vector(position.x, position.y + velocity.y);
             if (!mapGenerator.collidesWithWall(testX.x, testX.y, radius)) {
                 position = testX;
+                velocity.y *= 0.5; // Reduce perpendicular velocity
             } else if (!mapGenerator.collidesWithWall(testY.x, testY.y, radius)) {
                 position = testY;
+                velocity.x *= 0.5; // Reduce perpendicular velocity
             } else {
-                velocity.multiply(0);
+                // If completely stuck, apply strong escape force
+                Vector escapeForce = new Vector(0, 0);
+                int[][] directions = {
+                    { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
+                    { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }
+                };
+                for (int[] dir : directions) {
+                    Vector testPos = new Vector(position.x + dir[0] * 30, position.y + dir[1] * 30);
+                    if (!mapGenerator.collidesWithWall(testPos.x, testPos.y, radius)) {
+                        escapeForce.add(new Vector(dir[0], dir[1]));
+                    }
+                }
+                if (escapeForce.magnitude() > 0) {
+                    escapeForce.normalize();
+                    escapeForce.multiply(maxSpeed * 0.5);
+                    velocity = escapeForce;
+                    position = new Vector(position.x + velocity.x, position.y + velocity.y);
+                } else {
+                    velocity.multiply(0.1); // Slow down if no escape found
+                }
             }
         }
 
