@@ -12,52 +12,11 @@ public class Commander extends Actor {
     private Color fillColor = new Color(100, 220, 100);
     private Color outlineColor = Color.WHITE;
     private int health = 100;
-    private int xp = 0;
-    private int normalBoidSpawns = 0;
-    private double speedMultiplier = 1.0;
-    private int minionSpawnRate = 0;
 
     public Commander(int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
         maxSpeed = 5.0;
         maxForce = 0.2;
-    }
-
-    public void addXp(int amount) {
-        xp += amount;
-    }
-
-    public int getXp() {
-        return xp;
-    }
-
-    public void resetXp() {
-        xp = 0;
-    }
-
-    public void addNormalBoidSpawn() {
-        normalBoidSpawns++;
-    }
-
-    public int getNormalBoidSpawns() {
-        return normalBoidSpawns;
-    }
-
-    public void addSpeedUpgrade() {
-        speedMultiplier *= 1.15;
-        maxSpeed *= 1.15;
-    }
-
-    public double getSpeedMultiplier() {
-        return speedMultiplier;
-    }
-
-    public void addMinionSpawnRate() {
-        minionSpawnRate++;
-    }
-
-    public int getMinionSpawnRate() {
-        return minionSpawnRate;
     }
 
     public void update(Input input, MapGenerator mapGenerator) {
@@ -101,14 +60,6 @@ public class Commander extends Actor {
 
     public void resetHealth() {
         health = 100;
-    }
-
-    public void resetUpgrades() {
-        xp = 0;
-        normalBoidSpawns = 0;
-        speedMultiplier = 1.0;
-        minionSpawnRate = 0;
-        maxSpeed = 5.0;
     }
 
     @Override

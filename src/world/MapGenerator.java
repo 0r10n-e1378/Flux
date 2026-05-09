@@ -26,8 +26,6 @@ public class MapGenerator {
     private final Set<String> generatedChunks = new HashSet<>();
     private final List<NormalBoid> normalBoids = new ArrayList<>();
     private final List<EnemyBoid> enemyBoids = new ArrayList<>();
-    private int enemySwarmCount = 0;
-    private double swarmSizeMultiplier = 1.0;
 
     public void update(double playerX, double playerY) {
         int centerChunkX = (int) Math.floor(playerX / CHUNK_SIZE);
@@ -108,20 +106,6 @@ public class MapGenerator {
         enemyBoids.remove(boid);
     }
 
-    public int getEnemySwarmCount() {
-        return enemySwarmCount;
-    }
-
-    public double getSwarmSizeMultiplier() {
-        return swarmSizeMultiplier;
-    }
-
-    public void updateSwarmScaling() {
-        if (enemySwarmCount > 0 && enemySwarmCount % 10 == 0) {
-            swarmSizeMultiplier *= 1.2;
-        }
-    }
-
     private boolean circleIntersectsRect(double cx, double cy, int radius, Rectangle rect) {
         double closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
         double closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
@@ -168,9 +152,7 @@ public class MapGenerator {
         if (generateNormalBoids) {
             int enemySwarmChance = rand.nextInt(12);
             if (enemySwarmChance == 0) {
-                enemySwarmCount++;
-                int baseSwarmsSize = 10 + rand.nextInt(6);
-                int swarmSize = (int) (baseSwarmsSize * swarmSizeMultiplier);
+                int swarmSize = 10 + rand.nextInt(6);
                 int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                 int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                 for (int i = 0; i < swarmSize; i++) {
