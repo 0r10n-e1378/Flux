@@ -33,10 +33,6 @@ public class Vector {
 	    return Math.sqrt(x * x + y * y);
 	}
 	
-//	public double distance () {
-//		return x * x + y * y;
-//	}
-	
 	public static double distance (Vector v1, Vector v2) {
 	    double dx = v1.x - v2.x;
 	    double dy = v1.y - v2.y;

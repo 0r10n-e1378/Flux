@@ -1,9 +1,11 @@
 package entities;
 
+import math.Vector;
+
 public class Enemy extends Boid{
 
-	public Enemy (int xPos, int yPos, int radius, int acceleration, int health, int maxSpeed) {
-		super(xPos, yPos, radius, acceleration, health, maxSpeed);
+	public Enemy (int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
+		super(xPos, yPos, radius, velocity, acceleration);
 	}
 	
 }

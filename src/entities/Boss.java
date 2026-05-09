@@ -1,9 +1,11 @@
 package entities;
 
-public class Boss extends Actor{
+import math.Vector;
 
-	public Boss (int xPos, int yPos, int radius, int acceleration, int health, int maxSpeed) {
-		super(xPos, yPos, radius, acceleration, health, maxSpeed);
+public class Boss extends Boid{
+
+	public Boss (int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
+		super(xPos, yPos, radius, velocity, acceleration);
 	}
 	
 }
