@@ -1,7 +1,11 @@
 package entities;
 
-import math.Vector;
+import core.Camera;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Polygon;
 import java.util.ArrayList;
+import math.Vector;
 
 public class Boid extends Actor{
 
@@ -11,16 +15,17 @@ public class Boid extends Actor{
 	
 	protected Vector separate(ArrayList<Boid> neighbors) {
         Vector steer = new Vector(0, 0);
-        double separation = radius * 2.5; 
+        double separation = radius * 4.0;
         int count = 0;
 
         for (Boid other : neighbors) {
+            if (other == this) continue;
             double d = Vector.distance(position, other.position);
-            if ((d > 0) && (d < separation)) {
+            if (d > 0 && d < separation) {
                 Vector diff = new Vector(position.x, position.y);
                 diff.subtract(other.position);
                 diff.normalize();
-                diff.divide(d); // Weight by distance
+                diff.divide(d * d); // Stronger weighting by distance
                 steer.add(diff);
                 count++;
             }
@@ -32,6 +37,7 @@ public class Boid extends Actor{
         Vector sum = new Vector(0, 0);
         int count = 0;
         for (Boid other : neighbors) {
+            if (other == this) continue;
             sum.add(other.velocity);
             count++;
         }
@@ -42,6 +48,7 @@ public class Boid extends Actor{
         Vector sum = new Vector(0, 0);
         int count = 0;
         for (Boid other : neighbors) {
+            if (other == this) continue;
             sum.add(other.position);
             count++;
         }
@@ -71,6 +78,27 @@ public class Boid extends Actor{
         desired.subtract(this.position);
         desired.normalize();
         desired.multiply(maxSpeed);
+        Vector steer = new Vector(desired.x, desired.y);
+        steer.subtract(this.velocity);
+        steer.recalculate(maxForce);
+        return steer;
+    }
+
+    protected Vector arrive(Vector target, double slowingRadius) {
+        Vector desired = new Vector(target.x, target.y);
+        desired.subtract(this.position);
+        double distance = desired.magnitude();
+        if (distance == 0) {
+            return new Vector(0, 0);
+        }
+
+        desired.normalize();
+        if (distance < slowingRadius) {
+            desired.multiply(maxSpeed * (distance / slowingRadius));
+        } else {
+            desired.multiply(maxSpeed);
+        }
+
         Vector steer = new Vector(desired.x, desired.y);
         steer.subtract(this.velocity);
         steer.recalculate(maxForce);
@@ -121,5 +149,32 @@ public class Boid extends Actor{
         // Return a zero vector if safe
         return new Vector(0, 0); 
     }
-	
+
+    @Override
+    public void draw(Graphics g, Camera camera) {
+        int screenX = camera.getScreenX(position.x);
+        int screenY = camera.getScreenY(position.y);
+        double angle = velocity.magnitude() > 0 ? Math.atan2(velocity.y, velocity.x) : 0;
+
+        Polygon arrow = createArrowShape(screenX, screenY, radius, angle);
+        g.setColor(new Color(80, 160, 255));
+        g.fillPolygon(arrow);
+        g.setColor(Color.WHITE);
+        g.drawPolygon(arrow);
+    }
+
+    protected Polygon createArrowShape(int x, int y, int radius, double angle) {
+        int tipX = x + (int) (Math.cos(angle) * radius * 2);
+        int tipY = y + (int) (Math.sin(angle) * radius * 2);
+        int leftX = x + (int) (Math.cos(angle + Math.PI * 0.75) * radius);
+        int leftY = y + (int) (Math.sin(angle + Math.PI * 0.75) * radius);
+        int rightX = x + (int) (Math.cos(angle - Math.PI * 0.75) * radius);
+        int rightY = y + (int) (Math.sin(angle - Math.PI * 0.75) * radius);
+
+        return new Polygon(
+            new int[] { tipX, leftX, x, rightX },
+            new int[] { tipY, leftY, y, rightY },
+            4
+        );
+    }
 }

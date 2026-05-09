@@ -1,5 +1,223 @@
 package world;
 
-public class MapGenerator {
+import core.Camera;
+import entities.EnemyBoid;
+import entities.NormalBoid;
+import entities.Wall;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import math.Vector;
 
+public class MapGenerator {
+    private static final int CHUNK_SIZE = 512;
+    private static final int LOAD_RADIUS = 2;
+
+    private final Map<String, Chunk> loadedChunks = new HashMap<>();
+    private final Set<String> removedNormalBoidIds = new HashSet<>();
+    private final Set<String> removedEnemyBoidIds = new HashSet<>();
+    private final Set<String> generatedChunks = new HashSet<>();
+    private final List<NormalBoid> normalBoids = new ArrayList<>();
+    private final List<EnemyBoid> enemyBoids = new ArrayList<>();
+    private int enemySwarmCount = 0;
+    private double swarmSizeMultiplier = 1.0;
+
+    public void update(double playerX, double playerY) {
+        int centerChunkX = (int) Math.floor(playerX / CHUNK_SIZE);
+        int centerChunkY = (int) Math.floor(playerY / CHUNK_SIZE);
+
+        for (int y = centerChunkY - LOAD_RADIUS; y <= centerChunkY + LOAD_RADIUS; y++) {
+            for (int x = centerChunkX - LOAD_RADIUS; x <= centerChunkX + LOAD_RADIUS; x++) {
+                String key = makeKey(x, y);
+                long seed = ((long) x << 32) ^ (y & 0xffffffffL);
+                Random rand = new Random(seed);
+                boolean generateBoids = !generatedChunks.contains(key);
+                if (!loadedChunks.containsKey(key)) {
+                    loadedChunks.put(key, createChunk(x, y, rand, generateBoids));
+                }
+                if (generateBoids) {
+                    generatedChunks.add(key);
+                }
+            }
+        }
+
+        loadedChunks.entrySet().removeIf(entry -> {
+            String[] parts = entry.getKey().split(":");
+            int chunkX = Integer.parseInt(parts[0]);
+            int chunkY = Integer.parseInt(parts[1]);
+            return Math.abs(chunkX - centerChunkX) > LOAD_RADIUS || Math.abs(chunkY - centerChunkY) > LOAD_RADIUS;
+        });
+    }
+
+    public void draw(Graphics g, Camera camera) {
+        for (Chunk chunk : loadedChunks.values()) {
+            chunk.draw(g, camera);
+        }
+    }
+
+    public boolean collidesWithWall(double x, double y, int radius) {
+        for (Chunk chunk : loadedChunks.values()) {
+            for (Wall wall : chunk.walls) {
+                Rectangle bounds = wall.getBounds();
+                if (circleIntersectsRect(x, y, radius, bounds)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public ArrayList<NormalBoid> getLoadedNormalBoids() {
+        ArrayList<NormalBoid> result = new ArrayList<>();
+        for (NormalBoid normal : normalBoids) {
+            int chunkX = (int) Math.floor(normal.getPosition().x / CHUNK_SIZE);
+            int chunkY = (int) Math.floor(normal.getPosition().y / CHUNK_SIZE);
+            if (loadedChunks.containsKey(makeKey(chunkX, chunkY))) {
+                result.add(normal);
+            }
+        }
+        return result;
+    }
+
+    public ArrayList<EnemyBoid> getLoadedEnemyBoids() {
+        ArrayList<EnemyBoid> result = new ArrayList<>();
+        for (EnemyBoid enemy : enemyBoids) {
+            int chunkX = (int) Math.floor(enemy.getPosition().x / CHUNK_SIZE);
+            int chunkY = (int) Math.floor(enemy.getPosition().y / CHUNK_SIZE);
+            if (loadedChunks.containsKey(makeKey(chunkX, chunkY))) {
+                result.add(enemy);
+            }
+        }
+        return result;
+    }
+
+    public void removeNormalBoid(NormalBoid boid) {
+        removedNormalBoidIds.add(boid.getId());
+        normalBoids.remove(boid);
+    }
+
+    public void removeEnemyBoid(EnemyBoid boid) {
+        removedEnemyBoidIds.add(boid.getId());
+        enemyBoids.remove(boid);
+    }
+
+    public int getEnemySwarmCount() {
+        return enemySwarmCount;
+    }
+
+    public double getSwarmSizeMultiplier() {
+        return swarmSizeMultiplier;
+    }
+
+    public void updateSwarmScaling() {
+        if (enemySwarmCount > 0 && enemySwarmCount % 10 == 0) {
+            swarmSizeMultiplier *= 1.2;
+        }
+    }
+
+    private boolean circleIntersectsRect(double cx, double cy, int radius, Rectangle rect) {
+        double closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
+        double closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
+        double dx = cx - closestX;
+        double dy = cy - closestY;
+        return dx * dx + dy * dy < radius * radius;
+    }
+
+    private Chunk createChunk(int chunkX, int chunkY, Random rand, boolean generateNormalBoids) {
+        Chunk chunk = new Chunk(chunkX, chunkY);
+
+        int obstacleCount = 1 + rand.nextInt(3);
+        for (int i = 0; i < obstacleCount; i++) {
+            int width = 40 + rand.nextInt(50);
+            int height = 40 + rand.nextInt(50);
+            int x = chunkX * CHUNK_SIZE + rand.nextInt(CHUNK_SIZE - width);
+            int y = chunkY * CHUNK_SIZE + rand.nextInt(CHUNK_SIZE - height);
+            chunk.walls.add(new Wall(x + width / 2.0, y + height / 2.0, width, height));
+        }
+
+        if (generateNormalBoids) {
+            int swarmCount = rand.nextInt(2);
+            for (int swarm = 0; swarm < swarmCount; swarm++) {
+                int swarmSize = 5 + rand.nextInt(6);
+                int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                for (int i = 0; i < swarmSize; i++) {
+                    double angle = rand.nextDouble() * Math.PI * 2;
+                    double distance = 20 + rand.nextDouble() * 30;
+                    int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                    int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                    String boidId = "normal-" + chunkX + "-" + chunkY + "-" + swarm + "-" + i;
+                    if (removedNormalBoidIds.contains(boidId)) {
+                        continue;
+                    }
+                    Vector velocity = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                    velocity.normalize();
+                    velocity.multiply(1.5);
+                    normalBoids.add(new NormalBoid(boidId, x, y, 10, velocity, new Vector(0, 0)));
+                }
+            }
+        }
+
+        if (generateNormalBoids) {
+            int enemySwarmChance = rand.nextInt(12);
+            if (enemySwarmChance == 0) {
+                enemySwarmCount++;
+                int baseSwarmsSize = 10 + rand.nextInt(6);
+                int swarmSize = (int) (baseSwarmsSize * swarmSizeMultiplier);
+                int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                for (int i = 0; i < swarmSize; i++) {
+                    double angle = rand.nextDouble() * Math.PI * 2;
+                    double distance = 20 + rand.nextDouble() * 40;
+                    int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                    int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                    String boidId = "enemy-" + chunkX + "-" + chunkY + "-" + i;
+                    if (removedEnemyBoidIds.contains(boidId)) {
+                        continue;
+                    }
+                    Vector eVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                    eVel.normalize();
+                    eVel.multiply(2.0);
+                    enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                }
+            }
+        }
+
+        return chunk;
+    }
+
+    private String makeKey(int x, int y) {
+        return x + ":" + y;
+    }
+
+    private static class Chunk {
+        final int chunkX;
+        final int chunkY;
+        final List<Wall> walls = new ArrayList<>();
+
+        Chunk(int chunkX, int chunkY) {
+            this.chunkX = chunkX;
+            this.chunkY = chunkY;
+        }
+
+        void draw(Graphics g, Camera camera) {
+            int px = camera.getScreenX(chunkX * CHUNK_SIZE);
+            int py = camera.getScreenY(chunkY * CHUNK_SIZE);
+            g.setColor(new Color(28, 28, 32));
+            g.fillRect(px, py, CHUNK_SIZE, CHUNK_SIZE);
+            g.setColor(new Color(46, 46, 58));
+            g.drawRect(px, py, CHUNK_SIZE, CHUNK_SIZE);
+
+            for (Wall wall : walls) {
+                wall.draw(g, camera);
+            }
+        }
+    }
 }

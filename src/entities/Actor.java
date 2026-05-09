@@ -25,5 +25,12 @@ public class Actor extends Entity{
 	public void push (Vector v) {
 		acceleration.add(v);
 	}
-	
+
+    public Vector getVelocity() {
+        return velocity;
+    }
+
+    public Vector getAcceleration() {
+        return acceleration;
+    }
 }
