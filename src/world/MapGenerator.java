@@ -172,6 +172,17 @@ public class MapGenerator {
                     double distance = 20 + rand.nextDouble() * 30;
                     int x = (int) Math.round(centerX + Math.cos(angle) * distance);
                     int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                    
+                    // Ensure boid doesn't spawn inside a wall
+                    int attempts = 0;
+                    while (collidesWithWall(x, y, 10) && attempts < 10) {
+                        angle = rand.nextDouble() * Math.PI * 2;
+                        distance = 20 + rand.nextDouble() * 30;
+                        x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                        y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                        attempts++;
+                    }
+                    
                     String boidId = "normal-" + chunkX + "-" + chunkY + "-" + swarm + "-" + i;
                     if (removedNormalBoidIds.contains(boidId)) {
                         continue;
@@ -201,6 +212,15 @@ public class MapGenerator {
                     // Spawn boss
                     int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                     int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                    
+                    // Ensure boss doesn't spawn inside a wall
+                    int attempts = 0;
+                    while (collidesWithWall(centerX, centerY, 25) && attempts < 10) {
+                        centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                        centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                        attempts++;
+                    }
+                    
                     String bossId = "boss-" + chunkX + "-" + chunkY + "-" + enemySwarmCount;
                     
                     Vector bossVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
@@ -221,6 +241,17 @@ public class MapGenerator {
                         double distance = 20 + rand.nextDouble() * 40;
                         int x = (int) Math.round(centerX + Math.cos(angle) * distance);
                         int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                        
+                        // Ensure enemy doesn't spawn inside a wall
+                        int attempts = 0;
+                        while (collidesWithWall(x, y, 10) && attempts < 10) {
+                            angle = rand.nextDouble() * Math.PI * 2;
+                            distance = 20 + rand.nextDouble() * 40;
+                            x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                            y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                            attempts++;
+                        }
+                        
                         String boidId = "enemy-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
                         if (removedEnemyBoidIds.contains(boidId)) {
                             continue;

@@ -99,7 +99,7 @@ public class NormalBoid extends Boid {
             steer.normalize();
             steer.multiply(maxSpeed);
             steer.subtract(velocity);
-            steer.recalculate(maxForce * 2.0);
+            steer.recalculate(maxForce * 0.8);
             return steer;
         }
         return new Vector(0, 0);
