@@ -8,32 +8,52 @@ import java.util.ArrayList;
 import math.Vector;
 import world.MapGenerator;
 
-public class NormalBoid extends Boid {
+public class BossBoid extends Boid {
     private final String id;
+    private int health = 50;
+    private long lastSpawnTime = 0;
+    private final long spawnInterval = 3000; // 3 seconds
 
-    public NormalBoid(String id, int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
+    public BossBoid(String id, int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
         this.id = id;
-        maxSpeed = 3.0;
-        maxForce = 0.08;
+        maxSpeed = 3.0; // Slower than regular enemies
+        maxForce = 0.15;
     }
 
     public String getId() {
         return id;
     }
 
-    public void update(ArrayList<Boid> flock, MapGenerator mapGenerator) {
-        Vector s = separate(flock);
-        Vector a = align(flock);
-        Vector c = cohere(flock);
+    public int getHealth() {
+        return health;
+    }
 
-        s.multiply(3.2);
-        a.multiply(0.65);
-        c.multiply(0.35);
+    public void takeDamage(int damage) {
+        health -= damage;
+    }
+
+    public boolean isDead() {
+        return health <= 0;
+    }
+
+    public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
+        ArrayList<Boid> flockAsBoids = new ArrayList<>(flock);
+
+        Vector s = separate(flockAsBoids);
+        Vector a = align(flockAsBoids);
+        Vector c = cohere(flockAsBoids);
+        Vector chase = seek(commander.getPosition());
+
+        s.multiply(3.5);
+        a.multiply(0.7);
+        c.multiply(0.4);
+        chase.multiply(1.5); // Less aggressive chase
 
         push(s);
         push(a);
         push(c);
+        push(chase);
         push(avoidWalls(mapGenerator));
 
         velocity.add(acceleration);
@@ -55,11 +75,36 @@ public class NormalBoid extends Boid {
         }
 
         acceleration.multiply(0);
+
+        // Spawn enemy boids periodically
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastSpawnTime >= spawnInterval) {
+            spawnEnemies(mapGenerator);
+            lastSpawnTime = currentTime;
+        }
+    }
+
+    private void spawnEnemies(MapGenerator mapGenerator) {
+        // Spawn 2-4 enemy boids around the boss
+        int spawnCount = 2 + (int)(Math.random() * 3);
+        for (int i = 0; i < spawnCount; i++) {
+            double angle = Math.random() * Math.PI * 2;
+            double distance = 50 + Math.random() * 30;
+            int x = (int)(position.x + Math.cos(angle) * distance);
+            int y = (int)(position.y + Math.sin(angle) * distance);
+
+            Vector velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
+            velocity.normalize();
+            velocity.multiply(2.0);
+
+            mapGenerator.addEnemyBoid(new EnemyBoid("boss-spawn-" + System.currentTimeMillis() + "-" + i,
+                                                   x, y, 10, velocity, new Vector(0, 0)));
+        }
     }
 
     private Vector avoidWalls(MapGenerator mapGenerator) {
         Vector steer = new Vector(0, 0);
-        
+
         // Check if currently in a wall - if so, provide strong escape force
         if (mapGenerator.collidesWithWall(position.x, position.y, radius)) {
             int[][] directions = {
@@ -80,7 +125,7 @@ public class NormalBoid extends Boid {
                 return steer;
             }
         }
-        
+
         // Normal wall avoidance with lookahead
         int probeDistance = radius + 30;
         int[][] directions = {
@@ -112,9 +157,22 @@ public class NormalBoid extends Boid {
         double angle = velocity.magnitude() > 0 ? Math.atan2(velocity.y, velocity.x) : 0;
 
         Polygon arrow = createArrowShape(screenX, screenY, radius, angle);
-        g.setColor(new Color(220, 190, 75));
+        g.setColor(new Color(150, 0, 150)); // Purple for boss
         g.fillPolygon(arrow);
-        g.setColor(Color.BLACK);
+        g.setColor(Color.WHITE);
         g.drawPolygon(arrow);
+
+        // Draw health bar
+        int barWidth = radius * 3;
+        int barHeight = 4;
+        int barX = screenX - barWidth / 2;
+        int barY = screenY - radius - 10;
+
+        g.setColor(Color.DARK_GRAY);
+        g.fillRect(barX, barY, barWidth, barHeight);
+        g.setColor(Color.RED);
+        g.fillRect(barX, barY, (int)(barWidth * health / 50.0), barHeight);
+        g.setColor(Color.WHITE);
+        g.drawRect(barX, barY, barWidth, barHeight);
     }
 }

@@ -23,12 +23,16 @@ public class EnemyBoid extends Boid {
     }
 
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
+        updateWithTarget(flock, commander.getPosition(), mapGenerator);
+    }
+
+    public void updateWithTarget(ArrayList<EnemyBoid> flock, Vector target, MapGenerator mapGenerator) {
         ArrayList<Boid> flockAsBoids = new ArrayList<>(flock);
 
         Vector s = separate(flockAsBoids);
         Vector a = align(flockAsBoids);
         Vector c = cohere(flockAsBoids);
-        Vector chase = seek(commander.getPosition());
+        Vector chase = seek(target);
 
         s.multiply(3.5);
         a.multiply(0.7);
@@ -64,16 +68,33 @@ public class EnemyBoid extends Boid {
 
     private Vector avoidWalls(MapGenerator mapGenerator) {
         Vector steer = new Vector(0, 0);
-        int probeDistance = radius + 10;
+        
+        // Check if currently in a wall - if so, provide strong escape force
+        if (mapGenerator.collidesWithWall(position.x, position.y, radius)) {
+            int[][] directions = {
+                { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
+                { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }
+            };
+            for (int[] dir : directions) {
+                Vector testPos = new Vector(position.x + dir[0] * 20, position.y + dir[1] * 20);
+                if (!mapGenerator.collidesWithWall(testPos.x, testPos.y, radius)) {
+                    steer.add(new Vector(dir[0], dir[1]));
+                }
+            }
+            if (steer.magnitude() > 0) {
+                steer.normalize();
+                steer.multiply(maxSpeed * 2);
+                steer.subtract(velocity);
+                steer.recalculate(maxForce * 3.0);
+                return steer;
+            }
+        }
+        
+        // Normal wall avoidance with lookahead
+        int probeDistance = radius + 30;
         int[][] directions = {
-            { -1, 0 },
-            { 1, 0 },
-            { 0, -1 },
-            { 0, 1 },
-            { -1, -1 },
-            { 1, -1 },
-            { -1, 1 },
-            { 1, 1 }
+            { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
+            { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }
         };
 
         for (int[] dir : directions) {
@@ -87,7 +108,7 @@ public class EnemyBoid extends Boid {
             steer.normalize();
             steer.multiply(maxSpeed);
             steer.subtract(velocity);
-            steer.recalculate(maxForce * 1.5);
+            steer.recalculate(maxForce * 2.0);
             return steer;
         }
         return new Vector(0, 0);

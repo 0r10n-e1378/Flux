@@ -12,6 +12,7 @@ public class Commander extends Actor {
     private Color fillColor = new Color(100, 220, 100);
     private Color outlineColor = Color.WHITE;
     private int health = 100;
+    private double speedMultiplier = 1.0;
 
     public Commander(int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
@@ -88,5 +89,10 @@ public class Commander extends Actor {
             new int[] { tipY, leftY, y, rightY },
             4
         );
+    }
+
+    public void setSpeedMultiplier(double multiplier) {
+        this.speedMultiplier = multiplier;
+        maxSpeed = 5.0 * multiplier;
     }
 }

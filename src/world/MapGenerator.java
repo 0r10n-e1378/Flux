@@ -1,6 +1,7 @@
 package world;
 
 import core.Camera;
+import entities.BossBoid;
 import entities.EnemyBoid;
 import entities.NormalBoid;
 import entities.Wall;
@@ -26,6 +27,13 @@ public class MapGenerator {
     private final Set<String> generatedChunks = new HashSet<>();
     private final List<NormalBoid> normalBoids = new ArrayList<>();
     private final List<EnemyBoid> enemyBoids = new ArrayList<>();
+    private final List<BossBoid> bossBoids = new ArrayList<>();
+    private double normalBoidSpawnRate = 1.0;
+    private int enemySwarmCount = 0;
+    private double enemySwarmMultiplier = 1.0;
+    private long lastEnemySpawnTime = 0;
+    private long enemySpawnInterval = 12000; // Start with 12 seconds between spawns
+    private long gameStartTime = System.currentTimeMillis();
 
     public void update(double playerX, double playerY) {
         int centerChunkX = (int) Math.floor(playerX / CHUNK_SIZE);
@@ -101,9 +109,36 @@ public class MapGenerator {
         normalBoids.remove(boid);
     }
 
-    public void removeEnemyBoid(EnemyBoid boid) {
-        removedEnemyBoidIds.add(boid.getId());
-        enemyBoids.remove(boid);
+    public ArrayList<BossBoid> getLoadedBossBoids() {
+        ArrayList<BossBoid> result = new ArrayList<>();
+        for (BossBoid boss : bossBoids) {
+            int chunkX = (int) Math.floor(boss.getPosition().x / CHUNK_SIZE);
+            int chunkY = (int) Math.floor(boss.getPosition().y / CHUNK_SIZE);
+            if (loadedChunks.containsKey(makeKey(chunkX, chunkY))) {
+                result.add(boss);
+            }
+        }
+        return result;
+    }
+
+    public void addEnemyBoid(EnemyBoid enemy) {
+        enemyBoids.add(enemy);
+    }
+
+    public void addBossBoid(BossBoid boss) {
+        bossBoids.add(boss);
+    }
+
+    public void removeBossBoid(BossBoid boss) {
+        bossBoids.remove(boss);
+    }
+
+    public void removeEnemyBoid(EnemyBoid enemy) {
+        enemyBoids.remove(enemy);
+    }
+
+    public void setNormalBoidSpawnRate(double rate) {
+        this.normalBoidSpawnRate = rate;
     }
 
     private boolean circleIntersectsRect(double cx, double cy, int radius, Rectangle rect) {
@@ -127,7 +162,7 @@ public class MapGenerator {
         }
 
         if (generateNormalBoids) {
-            int swarmCount = rand.nextInt(2);
+            int swarmCount = (int) (rand.nextInt(2) * normalBoidSpawnRate);
             for (int swarm = 0; swarm < swarmCount; swarm++) {
                 int swarmSize = 5 + rand.nextInt(6);
                 int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
@@ -150,24 +185,51 @@ public class MapGenerator {
         }
 
         if (generateNormalBoids) {
-            int enemySwarmChance = rand.nextInt(12);
-            if (enemySwarmChance == 0) {
-                int swarmSize = 10 + rand.nextInt(6);
-                int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
-                int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
-                for (int i = 0; i < swarmSize; i++) {
-                    double angle = rand.nextDouble() * Math.PI * 2;
-                    double distance = 20 + rand.nextDouble() * 40;
-                    int x = (int) Math.round(centerX + Math.cos(angle) * distance);
-                    int y = (int) Math.round(centerY + Math.sin(angle) * distance);
-                    String boidId = "enemy-" + chunkX + "-" + chunkY + "-" + i;
-                    if (removedEnemyBoidIds.contains(boidId)) {
-                        continue;
+            // Time-based enemy spawning with progressive difficulty
+            long currentTime = System.currentTimeMillis();
+            long gameTime = currentTime - gameStartTime;
+            
+            // Reduce spawn interval over time (minimum 3 seconds)
+            enemySpawnInterval = Math.max(3000, 12000 - (gameTime / 1000) * 50); // Reduce by 50ms per second
+            
+            if (currentTime - lastEnemySpawnTime >= enemySpawnInterval) {
+                enemySwarmCount++;
+                lastEnemySpawnTime = currentTime;
+                
+                // Every 10 waves, spawn a boss
+                if (enemySwarmCount % 10 == 0) {
+                    // Spawn boss
+                    int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                    int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                    String bossId = "boss-" + chunkX + "-" + chunkY + "-" + enemySwarmCount;
+                    
+                    Vector bossVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                    bossVel.normalize();
+                    bossVel.multiply(1.5);
+                    
+                    bossBoids.add(new BossBoid(bossId, centerX, centerY, 25, bossVel, new Vector(0, 0)));
+                } else {
+                    // Regular enemy swarm
+                    if (enemySwarmCount % 5 == 0) {
+                        enemySwarmMultiplier *= 1.2;
                     }
-                    Vector eVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
-                    eVel.normalize();
-                    eVel.multiply(2.0);
-                    enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                    int swarmSize = (int) ((10 + rand.nextInt(6)) * enemySwarmMultiplier);
+                    int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                    int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
+                    for (int i = 0; i < swarmSize; i++) {
+                        double angle = rand.nextDouble() * Math.PI * 2;
+                        double distance = 20 + rand.nextDouble() * 40;
+                        int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                        int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                        String boidId = "enemy-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
+                        if (removedEnemyBoidIds.contains(boidId)) {
+                            continue;
+                        }
+                        Vector eVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                        eVel.normalize();
+                        eVel.multiply(2.0);
+                        enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                    }
                 }
             }
         }
