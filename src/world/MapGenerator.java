@@ -34,6 +34,7 @@ public class MapGenerator {
     private long lastEnemySpawnTime = 0;
     private long enemySpawnInterval = 12000; // Start with 12 seconds between spawns
     private long gameStartTime = System.currentTimeMillis();
+    private int bossSpawnCount = 0;
 
     public void update(double playerX, double playerY) {
         int centerChunkX = (int) Math.floor(playerX / CHUNK_SIZE);
@@ -227,7 +228,8 @@ public class MapGenerator {
                     bossVel.normalize();
                     bossVel.multiply(1.5);
                     
-                    bossBoids.add(new BossBoid(bossId, centerX, centerY, 25, bossVel, new Vector(0, 0)));
+                    bossSpawnCount++;
+                    bossBoids.add(new BossBoid(bossId, centerX, centerY, bossSpawnCount, 25, bossVel, new Vector(0, 0)));
                     
                     // Spawn 15 enemy boids around the boss
                     for (int i = 0; i < 15; i++) {

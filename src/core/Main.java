@@ -21,6 +21,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     private enum GameState {
         MENU,
         PLAYING,
+        PAUSED,
         UPGRADE
     }
 
@@ -37,6 +38,12 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             this.id = id;
             this.name = name;
         }
+    }
+
+    private enum Formation {
+        NORMAL,
+        HEX_SHIELD,
+        ARROWHEAD
     }
 
     private JFrame window;
@@ -61,6 +68,10 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     private long lastMinionSpawnTime = 0;
     private List<Integer> availableUpgrades = new ArrayList<>();
     private List<Integer> lastAvailableUpgrades = new ArrayList<>();
+    
+    private Formation currentFormation = Formation.NORMAL;
+    private long lastFormationSwitchTime = 0;
+    private static final long FORMATION_SWITCH_COOLDOWN = 200; // ms
 
     public Main() {
         // Setup the Window
@@ -106,6 +117,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         speedMultiplier = 1.0;
         minionSpawnRate = 0;
         lastMinionSpawnTime = System.currentTimeMillis();
+        currentFormation = Formation.NORMAL;
+        lastFormationSwitchTime = 0;
         generateRandomUpgrades();
 
         for (int i = 0; i < 30; i++) {
@@ -293,8 +306,10 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                 lastMinionSpawnTime = currentTime;
             }
 
-            for (Minion minion : minions) {
-                minion.update(commander, new ArrayList<>(minions), mapGenerator);
+            for (int i = 0; i < minions.size(); i++) {
+                Minion minion = minions.get(i);
+                Vector formationTarget = getFormationPosition(i, commander.getPosition(), commander.getVelocity());
+                minion.update(commander, new ArrayList<>(minions), mapGenerator, formationTarget, currentFormation == Formation.NORMAL ? 4.8 : 6.5);
             }
             mapGenerator.update(commander.getX(), commander.getY());
             entityManager.updateAll();
@@ -351,7 +366,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             if (menuScreen != null) {
                 menuScreen.draw(g);
             }
-        } else if (gameState == GameState.PLAYING) {
+        } else if (gameState == GameState.PLAYING || gameState == GameState.PAUSED) {
             if (mapGenerator != null) {
                 mapGenerator.draw(g, camera);
             }
@@ -399,6 +414,22 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 16));
             g.drawString("Minions: " + minions.size() + "/" + maxMinions, 20, 30);
+            
+            // Formation display
+            String formationName = "Formation: ";
+            if (currentFormation == Formation.NORMAL) {
+                formationName += "NORMAL";
+                g.setColor(Color.CYAN);
+            } else if (currentFormation == Formation.HEX_SHIELD) {
+                formationName += "HEX SHIELD";
+                g.setColor(Color.YELLOW);
+            } else {
+                formationName += "ARROWHEAD";
+                g.setColor(Color.RED);
+            }
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.drawString(formationName + " (Press SPACE to cycle)", 20, 55);
+            
             // XP bar bottom right
             int xpBarX = getWidth() - 220;
             int xpBarY = getHeight() - 40;
@@ -414,6 +445,9 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             g.drawRect(xpBarX, xpBarY, xpBarWidth, xpBarHeight);
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString("XP: " + xp + "/" + upgradeCost, xpBarX + 8, xpBarY + xpBarHeight - 4);
+            if (gameState == GameState.PAUSED) {
+                drawPauseOverlay(g);
+            }
         } else if (gameState == GameState.UPGRADE) {
             // Draw upgrade screen
             g.setColor(Color.BLACK);
@@ -456,11 +490,150 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         javax.swing.SwingUtilities.invokeLater(Main::new);
     }
 
+    private void drawPauseOverlay(Graphics g) {
+        int width = getWidth();
+        int height = getHeight();
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRect(0, 0, width, height);
+
+        g.setFont(new Font("Arial", Font.BOLD, 72));
+        g.setColor(Color.WHITE);
+        String pausedText = "PAUSED";
+        int textWidth = g.getFontMetrics().stringWidth(pausedText);
+        g.drawString(pausedText, (width - textWidth) / 2, 120);
+
+        int buttonWidth = 280;
+        int buttonHeight = 90;
+        int spacing = 30;
+        int totalWidth = buttonWidth * 2 + spacing;
+        int startX = (width - totalWidth) / 2;
+        int buttonY = height / 2;
+
+        g.setColor(Color.LIGHT_GRAY);
+        g.fillRect(startX, buttonY, buttonWidth, buttonHeight);
+        g.fillRect(startX + buttonWidth + spacing, buttonY, buttonWidth, buttonHeight);
+
+        g.setColor(Color.WHITE);
+        g.drawRect(startX, buttonY, buttonWidth, buttonHeight);
+        g.drawRect(startX + buttonWidth + spacing, buttonY, buttonWidth, buttonHeight);
+
+        g.setFont(new Font("Arial", Font.BOLD, 28));
+        String continueText = "CONTINUE";
+        String exitText = "EXIT";
+        int continueWidth = g.getFontMetrics().stringWidth(continueText);
+        int exitWidth = g.getFontMetrics().stringWidth(exitText);
+        g.drawString(continueText, startX + (buttonWidth - continueWidth) / 2, buttonY + 56);
+        g.drawString(exitText, startX + buttonWidth + spacing + (buttonWidth - exitWidth) / 2, buttonY + 56);
+    }
+
+    private Vector getFormationPosition(int minionIndex, Vector commanderPos, Vector commanderVelocity) {
+        if (currentFormation == Formation.NORMAL) {
+            return null; // Normal formation doesn't use target positions
+        }
+        
+        double commanderAngle = commanderVelocity.magnitude() > 0 ? 
+            Math.atan2(commanderVelocity.y, commanderVelocity.x) : 0;
+        
+        if (currentFormation == Formation.HEX_SHIELD) {
+            return getHexShieldPosition(minionIndex, commanderPos, commanderAngle);
+        } else if (currentFormation == Formation.ARROWHEAD) {
+            return getArrowheadPosition(minionIndex, commanderPos, commanderAngle);
+        }
+        
+        return null;
+    }
+    
+    private Vector getHexShieldPosition(int minionIndex, Vector commanderPos, double commanderAngle) {
+        // Create a true hexagonal formation with offset rows
+        double spacing = 50;
+        
+        // Determine row and column in hexagonal grid
+        int row = 0;
+        int boidCountBefore = 0;
+        
+        // Find which row this minion belongs to
+        while (boidCountBefore + (row + 1) * 6 <= minionIndex) {
+            boidCountBefore += (row + 1) * 6;
+            row++;
+        }
+        
+        int posInRow = minionIndex - boidCountBefore;
+        int boidsInThisRow = (row + 1) * 6;
+        
+        // Calculate angle around the hexagon
+        double angleStep = Math.PI * 2 / boidsInThisRow;
+        double angle = commanderAngle + (angleStep * posInRow);
+        
+        // Distance from commander increases with row
+        double distance = 70 + (row * 40);
+        
+        double x = commanderPos.x + Math.cos(angle) * distance;
+        double y = commanderPos.y + Math.sin(angle) * distance;
+        
+        return new Vector(x, y);
+    }
+    
+    private Vector getArrowheadPosition(int minionIndex, Vector commanderPos, double commanderAngle) {
+        // Create a proper triangle/arrowhead formation with triangular rows
+        // Row 0: 1 boid (point), Row 1: 2 boids, Row 2: 3 boids, etc.
+        
+        int row = 0;
+        int boidCountBefore = 0;
+        
+        // Find which row this minion belongs to
+        while (boidCountBefore + row + 1 <= minionIndex) {
+            boidCountBefore += row + 1;
+            row++;
+        }
+        
+        int posInRow = minionIndex - boidCountBefore;
+        int boidsInThisRow = row + 1;
+        
+        // Distance along the forward direction
+        double depthDistance = 40 + (row * 40);
+        
+        // Lateral offset centered at 0
+        double lateralSpacing = 50;
+        double lateralOffset = (posInRow - (boidsInThisRow - 1) / 2.0) * lateralSpacing;
+        
+        // Calculate position relative to commander facing direction
+        double frontX = commanderPos.x + Math.cos(commanderAngle) * depthDistance;
+        double frontY = commanderPos.y + Math.sin(commanderAngle) * depthDistance;
+        
+        // Add lateral offset perpendicular to facing direction
+        double perpAngle = commanderAngle + Math.PI / 2;
+        double x = frontX + Math.cos(perpAngle) * lateralOffset;
+        double y = frontY + Math.sin(perpAngle) * lateralOffset;
+        
+        return new Vector(x, y);
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
-        if (gameState == GameState.MENU && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-            System.exit(0);
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (gameState == GameState.PLAYING) {
+                gameState = GameState.PAUSED;
+                return;
+            } else if (gameState == GameState.PAUSED) {
+                gameState = GameState.PLAYING;
+                return;
+            } else if (gameState == GameState.MENU) {
+                System.exit(0);
+                return;
+            }
         }
+        
+        // Formation cycling with SPACE key during gameplay
+        if (e.getKeyCode() == KeyEvent.VK_SPACE && gameState == GameState.PLAYING) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastFormationSwitchTime >= FORMATION_SWITCH_COOLDOWN) {
+                // Cycle to next formation
+                currentFormation = Formation.values()[(currentFormation.ordinal() + 1) % Formation.values().length];
+                lastFormationSwitchTime = currentTime;
+                return;
+            }
+        }
+        
         input.setKeyState(e.getKeyCode(), true);
     }
 
@@ -495,6 +668,23 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                     applyUpgrade(i);
                     break;
                 }
+            }
+        } else if (gameState == GameState.PAUSED) {
+            int buttonWidth = 280;
+            int buttonHeight = 90;
+            int spacing = 30;
+            int totalWidth = buttonWidth * 2 + spacing;
+            int startX = (getWidth() - totalWidth) / 2;
+            int buttonY = getHeight() / 2;
+
+            if (e.getX() >= startX && e.getX() <= startX + buttonWidth && e.getY() >= buttonY && e.getY() <= buttonY + buttonHeight) {
+                gameState = GameState.PLAYING;
+            } else if (e.getX() >= startX + buttonWidth + spacing && e.getX() <= startX + 2 * buttonWidth + spacing && e.getY() >= buttonY && e.getY() <= buttonY + buttonHeight) {
+                gameState = GameState.MENU;
+                mapGenerator = null;
+                commander = null;
+                minions = null;
+                menuScreen = new Menu(getWidth(), getHeight());
             }
         }
     }

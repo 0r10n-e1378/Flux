@@ -12,13 +12,14 @@ public class BossBoid extends Boid {
     private final String id;
     private int health = 50;
     private long lastSpawnTime = 0;
-    private final long spawnInterval = 3000; // 3 seconds
+    private long spawnInterval;
 
-    public BossBoid(String id, int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
+    public BossBoid(String id, int xPos, int yPos, int bossLevel, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
         this.id = id;
-        maxSpeed = 3.0; // Slower than regular enemies
-        maxForce = 0.15;
+        maxSpeed = 5.0; // Match commander's speed
+        maxForce = 0.3; // Higher force for better responsiveness
+        this.spawnInterval = Math.max(1000, 3000 - (bossLevel - 1) * 300);
     }
 
     public String getId() {
@@ -40,10 +41,14 @@ public class BossBoid extends Boid {
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
         // Boss only targets commander, not affected by flock
         Vector chase = seek(commander.getPosition());
-        chase.multiply(1.5); // Moderate chase strength
+        chase.multiply(2.0); // Strong chase priority
+
+        // Only avoid walls if they're directly in the way
+        Vector wallAvoid = avoidWalls(mapGenerator);
+        wallAvoid.multiply(0.5); // Reduce wall avoidance strength
 
         push(chase);
-        push(avoidWalls(mapGenerator));
+        push(wallAvoid);
 
         velocity.add(acceleration);
         velocity.recalculate(maxSpeed);
@@ -136,12 +141,11 @@ public class BossBoid extends Boid {
             }
         }
 
-        // Normal wall avoidance with lookahead
-        int probeDistance = radius + 30;
+        // Minimal wall avoidance - only when very close
+        int probeDistance = radius + 10; // Much shorter probe distance
         int[][] directions = {
-            { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
-            { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }
-        };
+            { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }
+        }; // Only cardinal directions, no diagonals
 
         for (int[] dir : directions) {
             Vector probe = new Vector(position.x + dir[0] * probeDistance, position.y + dir[1] * probeDistance);
@@ -152,9 +156,9 @@ public class BossBoid extends Boid {
 
         if (steer.magnitude() > 0) {
             steer.normalize();
-            steer.multiply(maxSpeed);
+            steer.multiply(maxSpeed * 0.3); // Much lower speed multiplier
             steer.subtract(velocity);
-            steer.recalculate(maxForce * 2.0);
+            steer.recalculate(maxForce * 0.5); // Much lower force multiplier
             return steer;
         }
         return new Vector(0, 0);

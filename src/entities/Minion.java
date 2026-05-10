@@ -6,14 +6,20 @@ import world.MapGenerator;
 
 public class Minion extends Boid {
     private double speedMultiplier = 1.0;
+    private double baseMaxSpeed = 4.8;
 
     public Minion(int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
         maxSpeed = 4.8;
+        baseMaxSpeed = 4.8;
         maxForce = 0.16;
     }
 
     public void update(Commander commander, ArrayList<Boid> swarm, MapGenerator mapGenerator) {
+        update(commander, swarm, mapGenerator, null, 4.8);
+    }
+
+    public void update(Commander commander, ArrayList<Boid> swarm, MapGenerator mapGenerator, Vector formationTarget, double maxSpeedOverride) {
         Vector s = separate(swarm);
         Vector a = align(swarm);
         Vector c = cohere(swarm);
@@ -27,7 +33,18 @@ public class Minion extends Boid {
         push(s);
         push(a);
         push(c);
-        push(lead);
+        
+        // If we have a formation target, use it instead of commander following
+        if (formationTarget != null) {
+            Vector formationForce = arrive(formationTarget, 80);
+            formationForce.multiply(3.0); // Higher priority for formation alignment
+            push(formationForce);
+            maxSpeed = maxSpeedOverride; // Use increased speed for formation mode
+        } else {
+            push(lead);
+            maxSpeed = baseMaxSpeed * speedMultiplier;
+        }
+        
         push(avoidWalls(mapGenerator));
 
         velocity.add(acceleration);
@@ -120,6 +137,6 @@ public class Minion extends Boid {
 
     public void setSpeedMultiplier(double multiplier) {
         this.speedMultiplier = multiplier;
-        maxSpeed = 4.8 * multiplier;
+        baseMaxSpeed = 4.8 * multiplier;
     }
 }
