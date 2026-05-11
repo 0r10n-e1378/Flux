@@ -87,7 +87,7 @@ public class EnemyBoid extends Boid {
         acceleration.multiply(0);
     }
 
-    private Vector avoidWalls(MapGenerator mapGenerator) {
+    protected Vector avoidWalls(MapGenerator mapGenerator) {
         Vector steer = new Vector(0, 0);
         
         // Check if currently in a wall - if so, provide strong escape force

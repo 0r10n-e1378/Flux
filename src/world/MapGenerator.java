@@ -3,6 +3,7 @@ package world;
 import core.Camera;
 import entities.BossBoid;
 import entities.EnemyBoid;
+import entities.FlankerBoid;
 import entities.NormalBoid;
 import entities.Wall;
 import java.awt.Color;
@@ -31,6 +32,8 @@ public class MapGenerator {
     private double normalBoidSpawnRate = 1.0;
     private int enemySwarmCount = 0;
     private double enemySwarmMultiplier = 1.0;
+    private int flankerSwarmCount = 0;
+    private double flankerSwarmMultiplier = 1.0;
     private long lastEnemySpawnTime = 0;
     private long enemySpawnInterval = 12000; // Start with 12 seconds between spawns
     private long gameStartTime = System.currentTimeMillis();
@@ -261,6 +264,10 @@ public class MapGenerator {
                     // Regular enemy swarm
                     if (enemySwarmCount % 5 == 0) {
                         enemySwarmMultiplier *= 1.2;
+                        flankerSwarmCount++;
+                        if (flankerSwarmCount % 4 == 0) {
+                            flankerSwarmMultiplier *= 1.15;
+                        }
                     }
                     int swarmSize = (int) ((10 + rand.nextInt(6)) * enemySwarmMultiplier);
                     int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
@@ -289,6 +296,32 @@ public class MapGenerator {
                         eVel.normalize();
                         eVel.multiply(2.0);
                         enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                    }
+
+                    int flankerCount = Math.max(10, (int) Math.round(10 * flankerSwarmMultiplier));
+                    for (int i = 0; i < flankerCount; i++) {
+                        double angle = rand.nextDouble() * Math.PI * 2;
+                        double distance = 20 + rand.nextDouble() * 40;
+                        int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                        int y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                        
+                        int attempts = 0;
+                        while (collidesWithWall(x, y, 10) && attempts < 10) {
+                            angle = rand.nextDouble() * Math.PI * 2;
+                            distance = 20 + rand.nextDouble() * 40;
+                            x = (int) Math.round(centerX + Math.cos(angle) * distance);
+                            y = (int) Math.round(centerY + Math.sin(angle) * distance);
+                            attempts++;
+                        }
+                        
+                        String flankerId = "flanker-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
+                        if (removedEnemyBoidIds.contains(flankerId)) {
+                            continue;
+                        }
+                        Vector fVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
+                        fVel.normalize();
+                        fVel.multiply(5.0);
+                        enemyBoids.add(new FlankerBoid(flankerId, x, y, 10, fVel, new Vector(0, 0)));
                     }
                 }
             }

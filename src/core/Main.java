@@ -668,7 +668,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     
     private Vector getPhalanxPosition(int minionIndex, Vector commanderPos, double commanderAngle) {
         // Create a tight rectangular phalanx formation around the commander
-        // Dense, protective formation with minions in a grid pattern
+        // Dense grid that rotates to face the commander's heading
         
         int totalMinions = minions.size();
         
@@ -683,17 +683,17 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         // Tight spacing for phalanx formation
         double spacing = 35; // Close formation
         
-        // Center the formation around commander, with slight forward bias
+        // Center the formation around commander
         double centerRow = (rows - 1) / 2.0;
         double centerCol = (cols - 1) / 2.0;
         
-        // Calculate offset from commander
-        double rowOffset = (row - centerRow) * spacing;
-        double colOffset = (col - centerCol) * spacing;
+        // Local formation offsets: forward/back and left/right
+        double forwardOffset = (row - centerRow) * spacing;
+        double lateralOffset = (col - centerCol) * spacing;
         
-        // Position relative to commander
-        double x = commanderPos.x + colOffset;
-        double y = commanderPos.y + rowOffset;
+        // Rotate the grid so it faces commander movement direction
+        double x = commanderPos.x + Math.cos(commanderAngle) * forwardOffset - Math.sin(commanderAngle) * lateralOffset;
+        double y = commanderPos.y + Math.sin(commanderAngle) * forwardOffset + Math.cos(commanderAngle) * lateralOffset;
         
         return new Vector(x, y);
     }
