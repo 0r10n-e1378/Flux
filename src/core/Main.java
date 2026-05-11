@@ -43,7 +43,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     private enum Formation {
         NORMAL,
         HEX_SHIELD,
-        ARROWHEAD
+        ARROWHEAD,
+        PHALANX
     }
 
     private JFrame window;
@@ -161,12 +162,6 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             ArrayList<NormalBoid> loadedNormals = mapGenerator.getLoadedNormalBoids();
             ArrayList<EnemyBoid> loadedEnemies = mapGenerator.getLoadedEnemyBoids();
 
-            // Create list of all boids for avoidance
-            ArrayList<Boid> allBoids = new ArrayList<>();
-            allBoids.addAll(loadedNormals);
-            allBoids.addAll(loadedEnemies);
-            allBoids.addAll(minions);
-
             ArrayList<NormalBoid> converted = new ArrayList<>();
             for (NormalBoid normal : loadedNormals) {
                 // Check for conversion based on nearby minions
@@ -191,7 +186,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
 
             loadedNormals = mapGenerator.getLoadedNormalBoids();
             for (NormalBoid normal : loadedNormals) {
-                normal.update(allBoids, mapGenerator);
+                ArrayList<Boid> neighbors = getNeighbors(normal.getPosition(), 120, loadedNormals, loadedEnemies, minions);
+                normal.update(neighbors, mapGenerator);
             }
 
             ArrayList<BossBoid> loadedBosses = new ArrayList<>(mapGenerator.getLoadedBossBoids());
@@ -200,6 +196,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             }
 
             for (EnemyBoid enemy : new ArrayList<>(loadedEnemies)) {
+                ArrayList<Boid> enemyNeighbors = getNeighbors(enemy.getPosition(), 100, new ArrayList<>(), loadedEnemies, new ArrayList<>());
                 // If there are bosses, flock to them; otherwise chase commander
                 if (!loadedBosses.isEmpty()) {
                     BossBoid nearestBoss = loadedBosses.get(0);
@@ -211,9 +208,21 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                             nearestDist = dist;
                         }
                     }
-                    enemy.updateWithTarget(new ArrayList<>(loadedEnemies), nearestBoss.getPosition(), mapGenerator);
+                    ArrayList<EnemyBoid> enemyOnlyNeighbors = new ArrayList<>();
+                    for (Boid b : enemyNeighbors) {
+                        if (b instanceof EnemyBoid) {
+                            enemyOnlyNeighbors.add((EnemyBoid) b);
+                        }
+                    }
+                    enemy.updateWithTarget(enemyOnlyNeighbors, nearestBoss.getPosition(), mapGenerator);
                 } else {
-                    enemy.update(new ArrayList<>(loadedEnemies), commander, mapGenerator);
+                    ArrayList<EnemyBoid> enemyOnlyNeighbors = new ArrayList<>();
+                    for (Boid b : enemyNeighbors) {
+                        if (b instanceof EnemyBoid) {
+                            enemyOnlyNeighbors.add((EnemyBoid) b);
+                        }
+                    }
+                    enemy.update(enemyOnlyNeighbors, commander, mapGenerator);
                 }
             }
 
@@ -309,7 +318,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             for (int i = 0; i < minions.size(); i++) {
                 Minion minion = minions.get(i);
                 Vector formationTarget = getFormationPosition(i, commander.getPosition(), commander.getVelocity());
-                minion.update(commander, new ArrayList<>(minions), mapGenerator, formationTarget, currentFormation == Formation.NORMAL ? 4.8 : 6.5);
+                ArrayList<Boid> minionNeighbors = getNeighbors(minion.getPosition(), 120, new ArrayList<>(), new ArrayList<>(), minions);
+                minion.update(commander, minionNeighbors, mapGenerator, formationTarget, currentFormation == Formation.NORMAL ? 4.8 : 12.0);
             }
             mapGenerator.update(commander.getX(), commander.getY());
             entityManager.updateAll();
@@ -423,9 +433,12 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             } else if (currentFormation == Formation.HEX_SHIELD) {
                 formationName += "HEX SHIELD";
                 g.setColor(Color.YELLOW);
-            } else {
+            } else if (currentFormation == Formation.ARROWHEAD) {
                 formationName += "ARROWHEAD";
                 g.setColor(Color.RED);
+            } else {
+                formationName += "PHALANX";
+                g.setColor(Color.GREEN);
             }
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString(formationName + " (Press SPACE to cycle)", 20, 55);
@@ -526,6 +539,33 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         g.drawString(exitText, startX + buttonWidth + spacing + (buttonWidth - exitWidth) / 2, buttonY + 56);
     }
 
+    private ArrayList<Boid> getNeighbors(Vector position, double searchRadius, ArrayList<NormalBoid> normals, ArrayList<EnemyBoid> enemies, List<Minion> minionList) {
+        ArrayList<Boid> neighbors = new ArrayList<>();
+        
+        // Check normal boids
+        for (NormalBoid normal : normals) {
+            if (Vector.distance(position, normal.getPosition()) < searchRadius) {
+                neighbors.add(normal);
+            }
+        }
+        
+        // Check enemy boids
+        for (EnemyBoid enemy : enemies) {
+            if (Vector.distance(position, enemy.getPosition()) < searchRadius) {
+                neighbors.add(enemy);
+            }
+        }
+        
+        // Check minions
+        for (Minion minion : minionList) {
+            if (Vector.distance(position, minion.getPosition()) < searchRadius) {
+                neighbors.add(minion);
+            }
+        }
+        
+        return neighbors;
+    }
+
     private Vector getFormationPosition(int minionIndex, Vector commanderPos, Vector commanderVelocity) {
         if (currentFormation == Formation.NORMAL) {
             return null; // Normal formation doesn't use target positions
@@ -538,6 +578,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             return getHexShieldPosition(minionIndex, commanderPos, commanderAngle);
         } else if (currentFormation == Formation.ARROWHEAD) {
             return getArrowheadPosition(minionIndex, commanderPos, commanderAngle);
+        } else if (currentFormation == Formation.PHALANX) {
+            return getPhalanxPosition(minionIndex, commanderPos, commanderAngle);
         }
         
         return null;
@@ -574,8 +616,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
     
     private Vector getArrowheadPosition(int minionIndex, Vector commanderPos, double commanderAngle) {
-        // Create a proper triangle/arrowhead formation with triangular rows
-        // Row 0: 1 boid (point), Row 1: 2 boids, Row 2: 3 boids, etc.
+        // Create an arrowhead formation where commander is tucked in middle-back
+        // Tip extends far ahead, boids branch back in steep lines
         
         int row = 0;
         int boidCountBefore = 0;
@@ -589,21 +631,69 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         int posInRow = minionIndex - boidCountBefore;
         int boidsInThisRow = row + 1;
         
-        // Distance along the forward direction
-        double depthDistance = 40 + (row * 40);
+        // Calculate total rows to determine commander's position
+        int totalRows = 0;
+        int tempCount = 0;
+        while (tempCount < minions.size()) {
+            tempCount += totalRows + 1;
+            totalRows++;
+        }
+        totalRows = Math.max(1, totalRows - 1);
         
-        // Lateral offset centered at 0
-        double lateralSpacing = 50;
+        // Position commander in middle-back (around 70% from tip)
+        int commanderRow = Math.max(0, (int)(totalRows * 0.7));
+        
+        // Calculate depths: tip is furthest forward, rows get closer to commander
+        double tipDepth = 180; // Tip 180 units ahead
+        double rowSpacing = 50; // Spacing between rows
+        double minionDepth = tipDepth - (row * rowSpacing);
+        double commanderDepth = tipDepth - (commanderRow * rowSpacing);
+        
+        // Calculate lateral offset for this minion
+        double lateralSpacing = 45;
         double lateralOffset = (posInRow - (boidsInThisRow - 1) / 2.0) * lateralSpacing;
         
-        // Calculate position relative to commander facing direction
-        double frontX = commanderPos.x + Math.cos(commanderAngle) * depthDistance;
-        double frontY = commanderPos.y + Math.sin(commanderAngle) * depthDistance;
+        // Calculate position relative to commander
+        // Commander stays at their current position, formation arranges around them
+        double x = commanderPos.x + Math.cos(commanderAngle) * (minionDepth - commanderDepth);
+        double y = commanderPos.y + Math.sin(commanderAngle) * (minionDepth - commanderDepth);
         
         // Add lateral offset perpendicular to facing direction
         double perpAngle = commanderAngle + Math.PI / 2;
-        double x = frontX + Math.cos(perpAngle) * lateralOffset;
-        double y = frontY + Math.sin(perpAngle) * lateralOffset;
+        x += Math.cos(perpAngle) * lateralOffset;
+        y += Math.sin(perpAngle) * lateralOffset;
+        
+        return new Vector(x, y);
+    }
+    
+    private Vector getPhalanxPosition(int minionIndex, Vector commanderPos, double commanderAngle) {
+        // Create a tight rectangular phalanx formation around the commander
+        // Dense, protective formation with minions in a grid pattern
+        
+        int totalMinions = minions.size();
+        
+        // Calculate optimal grid dimensions (try to make it as square as possible)
+        int cols = (int) Math.ceil(Math.sqrt(totalMinions));
+        int rows = (int) Math.ceil((double) totalMinions / cols);
+        
+        // Calculate which row and column this minion belongs to
+        int row = minionIndex / cols;
+        int col = minionIndex % cols;
+        
+        // Tight spacing for phalanx formation
+        double spacing = 35; // Close formation
+        
+        // Center the formation around commander, with slight forward bias
+        double centerRow = (rows - 1) / 2.0;
+        double centerCol = (cols - 1) / 2.0;
+        
+        // Calculate offset from commander
+        double rowOffset = (row - centerRow) * spacing;
+        double colOffset = (col - centerCol) * spacing;
+        
+        // Position relative to commander
+        double x = commanderPos.x + colOffset;
+        double y = commanderPos.y + rowOffset;
         
         return new Vector(x, y);
     }
