@@ -1,5 +1,6 @@
 package entities;
 
+import ai.Behavior;
 import core.Camera;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -34,10 +35,10 @@ public class EnemyBoid extends Boid {
         Vector c = cohere(flockAsBoids);
         Vector chase = seek(target);
 
-        s.multiply(3.5);
-        a.multiply(0.7);
-        c.multiply(0.4);
-        chase.multiply(2.5);
+        Behavior.scale(s, 3.5);
+        Behavior.scale(a, 0.7);
+        Behavior.scale(c, 0.4);
+        Behavior.scale(chase, 2.5);
 
         push(s);
         push(a);

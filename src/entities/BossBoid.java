@@ -1,6 +1,8 @@
 package entities;
 
+import ai.Behavior;
 import core.Camera;
+import core.Formation;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Polygon;
@@ -13,6 +15,7 @@ public class BossBoid extends Boid {
     private int health = 50;
     private long lastSpawnTime = 0;
     private long spawnInterval;
+    private final Formation formation;
 
     public BossBoid(String id, int xPos, int yPos, int bossLevel, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
@@ -20,6 +23,9 @@ public class BossBoid extends Boid {
         maxSpeed = 5.0; // Match commander's speed
         maxForce = 0.3; // Higher force for better responsiveness
         this.spawnInterval = Math.max(1000, 3000 - (bossLevel - 1) * 300);
+        // Assign random formation (not NORMAL)
+        Formation[] formations = {Formation.HEX_SHIELD, Formation.ARROWHEAD, Formation.PHALANX};
+        this.formation = formations[(int)(Math.random() * formations.length)];
     }
 
     public String getId() {
@@ -38,14 +44,18 @@ public class BossBoid extends Boid {
         return health <= 0;
     }
 
+    public Formation getFormation() {
+        return formation;
+    }
+
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
         // Boss only targets commander, not affected by flock
         Vector chase = seek(commander.getPosition());
-        chase.multiply(2.0); // Strong chase priority
+        Behavior.scale(chase, 2.0); // Strong chase priority
 
         // Only avoid walls if they're directly in the way
         Vector wallAvoid = avoidWalls(mapGenerator);
-        wallAvoid.multiply(0.5); // Reduce wall avoidance strength
+        Behavior.scale(wallAvoid, 0.5); // Reduce wall avoidance strength
 
         push(chase);
         push(wallAvoid);
@@ -100,21 +110,7 @@ public class BossBoid extends Boid {
     }
 
     private void spawnEnemies(MapGenerator mapGenerator) {
-        // Spawn 2-4 enemy boids around the boss
-        int spawnCount = 2 + (int)(Math.random() * 3);
-        for (int i = 0; i < spawnCount; i++) {
-            double angle = Math.random() * Math.PI * 2;
-            double distance = 50 + Math.random() * 30;
-            int x = (int)(position.x + Math.cos(angle) * distance);
-            int y = (int)(position.y + Math.sin(angle) * distance);
-
-            Vector velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
-            velocity.normalize();
-            velocity.multiply(2.0);
-
-            mapGenerator.addEnemyBoid(new EnemyBoid("boss-spawn-" + System.currentTimeMillis() + "-" + i,
-                                                   x, y, 10, velocity, new Vector(0, 0)));
-        }
+        // Don't spawn additional enemies - guards are already spawned on boss creation
     }
 
     private Vector avoidWalls(MapGenerator mapGenerator) {

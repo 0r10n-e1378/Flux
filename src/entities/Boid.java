@@ -1,5 +1,6 @@
 package entities;
 
+import ai.Steering;
 import core.Camera;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -14,49 +15,15 @@ public class Boid extends Actor{
 	}
 	
 	protected Vector separate(ArrayList<Boid> neighbors) {
-        Vector steer = new Vector(0, 0);
-        double separation = radius * 4.0;
-        int count = 0;
-
-        for (Boid other : neighbors) {
-            if (other == this) continue;
-            double d = Vector.distance(position, other.position);
-            if (d > 0 && d < separation) {
-                Vector diff = new Vector(position.x, position.y);
-                diff.subtract(other.position);
-                diff.normalize();
-                diff.divide(d * d); // Stronger weighting by distance
-                steer.add(diff);
-                count++;
-            }
-        }
-        return processSteer(steer, count);
+        return Steering.separate(this, neighbors);
     }
 
     protected Vector align(ArrayList<Boid> neighbors) {
-        Vector sum = new Vector(0, 0);
-        int count = 0;
-        for (Boid other : neighbors) {
-            if (other == this) continue;
-            sum.add(other.velocity);
-            count++;
-        }
-        return processSteer(sum, count);
+        return Steering.align(this, neighbors);
     }
 
     protected Vector cohere(ArrayList<Boid> neighbors) {
-        Vector sum = new Vector(0, 0);
-        int count = 0;
-        for (Boid other : neighbors) {
-            if (other == this) continue;
-            sum.add(other.position);
-            count++;
-        }
-        if (count > 0) {
-            sum.divide(count);
-            return seek(sum); // Cohesion is seeking the center of mass
-        }
-        return new Vector(0,0);
+        return Steering.cohere(this, neighbors);
     }
 
     // Helper to turn a desired vector into a steering force

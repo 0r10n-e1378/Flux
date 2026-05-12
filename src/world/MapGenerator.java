@@ -4,6 +4,7 @@ import core.Camera;
 import entities.BossBoid;
 import entities.EnemyBoid;
 import entities.FlankerBoid;
+import entities.GuardBoid;
 import entities.NormalBoid;
 import entities.Wall;
 import java.awt.Color;
@@ -234,14 +235,14 @@ public class MapGenerator {
                     bossSpawnCount++;
                     bossBoids.add(new BossBoid(bossId, centerX, centerY, bossSpawnCount, 25, bossVel, new Vector(0, 0)));
                     
-                    // Spawn 15 enemy boids around the boss
+                    // Spawn 15 guard boids around the boss
                     for (int i = 0; i < 15; i++) {
                         double angle = rand.nextDouble() * Math.PI * 2;
                         double distance = 30 + rand.nextDouble() * 50;
                         int x = (int) Math.round(centerX + Math.cos(angle) * distance);
                         int y = (int) Math.round(centerY + Math.sin(angle) * distance);
                         
-                        // Ensure enemy doesn't spawn inside a wall
+                        // Ensure guard doesn't spawn inside a wall
                         int enemyAttempts = 0;
                         while (collidesWithWall(x, y, 10) && enemyAttempts < 10) {
                             angle = rand.nextDouble() * Math.PI * 2;
@@ -251,14 +252,14 @@ public class MapGenerator {
                             enemyAttempts++;
                         }
                         
-                        String boidId = "boss-enemy-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
+                        String boidId = "guard-" + chunkX + "-" + chunkY + "-" + enemySwarmCount + "-" + i;
                         if (removedEnemyBoidIds.contains(boidId)) {
                             continue;
                         }
                         Vector eVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
                         eVel.normalize();
                         eVel.multiply(2.0);
-                        enemyBoids.add(new EnemyBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
+                        enemyBoids.add(new GuardBoid(boidId, x, y, 10, eVel, new Vector(0, 0)));
                     }
                 } else {
                     // Regular enemy swarm
@@ -320,7 +321,7 @@ public class MapGenerator {
                         }
                         Vector fVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
                         fVel.normalize();
-                        fVel.multiply(5.0);
+                        fVel.multiply(2.8);
                         enemyBoids.add(new FlankerBoid(flankerId, x, y, 10, fVel, new Vector(0, 0)));
                     }
                 }

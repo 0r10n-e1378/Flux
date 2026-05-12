@@ -1,5 +1,8 @@
 package ai;
 
-public class SwarmState {
-
+public enum SwarmState {
+    ATTACK,
+    GUARD,
+    FLANK,
+    ROAM
 }

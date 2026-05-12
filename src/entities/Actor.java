@@ -33,4 +33,12 @@ public class Actor extends Entity{
     public Vector getAcceleration() {
         return acceleration;
     }
+
+    public double getMaxSpeed() {
+        return maxSpeed;
+    }
+
+    public double getMaxForce() {
+        return maxForce;
+    }
 }

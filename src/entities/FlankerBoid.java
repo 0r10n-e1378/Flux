@@ -1,5 +1,6 @@
 package entities;
 
+import ai.Behavior;
 import core.Camera;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -28,10 +29,10 @@ public class FlankerBoid extends EnemyBoid {
         Vector target = chooseFlankTarget(commander);
         Vector chase = seek(target);
 
-        s.multiply(3.2);
-        a.multiply(0.8);
-        c.multiply(0.35);
-        chase.multiply(3.0);
+        Behavior.scale(s, 3.2);
+        Behavior.scale(a, 0.8);
+        Behavior.scale(c, 0.35);
+        Behavior.scale(chase, 3.0);
 
         push(s);
         push(a);
