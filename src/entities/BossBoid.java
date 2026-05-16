@@ -2,7 +2,6 @@ package entities;
 
 import ai.Behavior;
 import core.Camera;
-import core.Formation;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Polygon;
@@ -15,7 +14,6 @@ public class BossBoid extends Boid {
     private int health = 50;
     private long lastSpawnTime = 0;
     private long spawnInterval;
-    private final Formation formation;
 
     public BossBoid(String id, int xPos, int yPos, int bossLevel, int radius, Vector velocity, Vector acceleration) {
         super(xPos, yPos, radius, velocity, acceleration);
@@ -23,9 +21,6 @@ public class BossBoid extends Boid {
         maxSpeed = 5.0; // Match commander's speed
         maxForce = 0.3; // Higher force for better responsiveness
         this.spawnInterval = Math.max(1000, 3000 - (bossLevel - 1) * 300);
-        // Assign random formation (not NORMAL)
-        Formation[] formations = {Formation.HEX_SHIELD, Formation.ARROWHEAD, Formation.PHALANX};
-        this.formation = formations[(int)(Math.random() * formations.length)];
     }
 
     public String getId() {
@@ -42,10 +37,6 @@ public class BossBoid extends Boid {
 
     public boolean isDead() {
         return health <= 0;
-    }
-
-    public Formation getFormation() {
-        return formation;
     }
 
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {

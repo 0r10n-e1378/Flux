@@ -9,45 +9,20 @@ import java.util.ArrayList;
 import math.Vector;
 import world.MapGenerator;
 
-public class GuardBoid extends EnemyBoid {
-    private int health = 3;
+public class ScoutBoid extends EnemyBoid {
 
-    public GuardBoid(String id, int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
+    public ScoutBoid(String id, int xPos, int yPos, int radius, Vector velocity, Vector acceleration) {
         super(id, xPos, yPos, radius, velocity, acceleration);
-        maxSpeed = 5.0;
-        maxForce = 0.18;
-    }
-
-    public void takeDamage(int damage) {
-        health -= damage;
-    }
-
-    public boolean isDead() {
-        return health <= 0;
+        maxSpeed = 12.5; // 2.5 times normal enemy speed
+        maxForce = 0.45;
     }
 
     @Override
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
-        updateWithTarget(flock, commander.getPosition(), mapGenerator);
-    }
+        // Scouts charge directly towards commander at max speed
+        Vector chase = seek(commander.getPosition());
+        Behavior.scale(chase, 3.0); // Strong chase priority
 
-    @Override
-    public void updateWithTarget(ArrayList<EnemyBoid> flock, Vector target, MapGenerator mapGenerator) {
-        ArrayList<Boid> flockAsBoids = new ArrayList<>(flock);
-
-        Vector s = separate(flockAsBoids);
-        Vector a = align(flockAsBoids);
-        Vector c = cohere(flockAsBoids);
-        Vector chase = seek(target);
-
-        Behavior.scale(s, 3.5);
-        Behavior.scale(a, 0.7);
-        Behavior.scale(c, 0.4);
-        Behavior.scale(chase, 1.5);
-
-        push(s);
-        push(a);
-        push(c);
         push(chase);
         push(avoidWalls(mapGenerator));
 
@@ -98,29 +73,34 @@ public class GuardBoid extends EnemyBoid {
         int screenY = camera.getScreenY(position.y);
         double angle = velocity.magnitude() > 0 ? Math.atan2(velocity.y, velocity.x) : 0;
 
-        Polygon guard = createGuardShape(screenX, screenY, radius, angle);
-        g.setColor(new Color(150, 100, 255)); // Brighter purple
-        g.fillPolygon(guard);
-        g.setColor(Color.WHITE);
-        g.drawPolygon(guard);
-    }
+        // Draw rectangular tail
+        int tailLength = radius + 8;
+        int tailWidth = Math.max(2, radius / 2);
+        int rearX = screenX - (int) (Math.cos(angle) * radius * 0.8);
+        int rearY = screenY - (int) (Math.sin(angle) * radius * 0.8);
 
-    private Polygon createGuardShape(int x, int y, int radius, double angle) {
-        int tipX = x + (int) (Math.cos(angle) * radius * 2);
-        int tipY = y + (int) (Math.sin(angle) * radius * 2);
-        int leftX = x + (int) (Math.cos(angle + Math.PI * 0.75) * radius);
-        int leftY = y + (int) (Math.sin(angle + Math.PI * 0.75) * radius);
-        int rightX = x + (int) (Math.cos(angle - Math.PI * 0.75) * radius);
-        int rightY = y + (int) (Math.sin(angle - Math.PI * 0.75) * radius);
-        int flatLeftX = tipX - (int) (Math.cos(angle) * radius * 0.6) + (int) (Math.cos(angle + Math.PI / 2) * radius * 0.3);
-        int flatLeftY = tipY - (int) (Math.sin(angle) * radius * 0.6) + (int) (Math.sin(angle + Math.PI / 2) * radius * 0.3);
-        int flatRightX = tipX - (int) (Math.cos(angle) * radius * 0.6) - (int) (Math.cos(angle + Math.PI / 2) * radius * 0.3);
-        int flatRightY = tipY - (int) (Math.sin(angle) * radius * 0.6) - (int) (Math.sin(angle + Math.PI / 2) * radius * 0.3);
+        int topX = rearX + (int) (Math.cos(angle + Math.PI / 2) * tailWidth);
+        int topY = rearY + (int) (Math.sin(angle + Math.PI / 2) * tailWidth);
+        int bottomX = rearX - (int) (Math.cos(angle + Math.PI / 2) * tailWidth);
+        int bottomY = rearY - (int) (Math.sin(angle + Math.PI / 2) * tailWidth);
+        int topBackX = topX - (int) (Math.cos(angle) * tailLength);
+        int topBackY = topY - (int) (Math.sin(angle) * tailLength);
+        int bottomBackX = bottomX - (int) (Math.cos(angle) * tailLength);
+        int bottomBackY = bottomY - (int) (Math.sin(angle) * tailLength);
 
-        return new Polygon(
-            new int[] { tipX, flatLeftX, leftX, x, rightX, flatRightX },
-            new int[] { tipY, flatLeftY, leftY, y, rightY, flatRightY },
-            6
+        Polygon tail = new Polygon(
+            new int[] { topX, bottomX, bottomBackX, topBackX },
+            new int[] { topY, bottomY, bottomBackY, topBackY },
+            4
         );
+
+        Color bodyColor = new Color(255, 100, 100); // Bright red for scouts
+        g.setColor(bodyColor);
+        g.fillPolygon(tail);
+        Polygon arrow = createArrowShape(screenX, screenY, radius, angle);
+        g.fillPolygon(arrow);
+        g.setColor(Color.WHITE);
+        g.drawPolygon(arrow);
+        g.drawPolygon(tail);
     }
 }

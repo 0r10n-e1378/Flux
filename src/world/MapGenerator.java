@@ -3,9 +3,9 @@ package world;
 import core.Camera;
 import entities.BossBoid;
 import entities.EnemyBoid;
-import entities.FlankerBoid;
 import entities.GuardBoid;
 import entities.NormalBoid;
+import entities.ScoutBoid;
 import entities.Wall;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -322,7 +322,7 @@ public class MapGenerator {
                         Vector fVel = new Vector(rand.nextDouble() * 2 - 1, rand.nextDouble() * 2 - 1);
                         fVel.normalize();
                         fVel.multiply(2.8);
-                        enemyBoids.add(new FlankerBoid(flankerId, x, y, 10, fVel, new Vector(0, 0)));
+                        enemyBoids.add(new ScoutBoid(flankerId, x, y, 10, fVel, new Vector(0, 0)));
                     }
                 }
             }
