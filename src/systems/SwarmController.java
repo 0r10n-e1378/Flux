@@ -16,6 +16,8 @@ import math.Vector;
 
 public class SwarmController {
 
+    // Builds a temporary spatial grid and returns nearby boids for a given position.
+    // This is used to gather the local flock for each boid on every frame.
     public static ArrayList<Boid> getNeighbors(Vector position, double searchRadius,
                                                ArrayList<NormalBoid> normals,
                                                ArrayList<EnemyBoid> enemies,

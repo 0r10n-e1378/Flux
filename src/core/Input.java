@@ -38,6 +38,8 @@ public class Input {
         }
     }
 
+    // Convert the current keyboard state into a direction vector.
+    // The vector is normalized so diagonal movement is not faster than straight movement.
     public Vector getDirection() {
         Vector direction = new Vector(0, 0);
 

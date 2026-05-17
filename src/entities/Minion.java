@@ -25,6 +25,8 @@ public class Minion extends Boid {
         update(commander, swarm, mapGenerator, null, 4.8);
     }
 
+    // Minions use flocking rules to stay with nearby allies,
+    // while also following the commander or holding a formation slot.
     public void update(Commander commander, ArrayList<Boid> swarm, MapGenerator mapGenerator, Vector formationTarget, double maxSpeedOverride) {
         Vector s = separate(swarm);
         Vector a = align(swarm);

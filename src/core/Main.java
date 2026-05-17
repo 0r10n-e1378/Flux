@@ -27,6 +27,11 @@ import world.MapGenerator;
 import world.Spawner;
 
 public class Main extends JPanel implements Runnable, KeyListener, MouseListener {
+    // The current screen / mode of the game.
+    // MENU: title screen, no gameplay.
+    // PLAYING: the game world is active and entities move.
+    // PAUSED: game is frozen and shows the pause overlay.
+    // UPGRADE: player chooses a reward after earning enough XP.
     private enum GameState {
         MENU,
         PLAYING,
@@ -50,11 +55,13 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
 
+    // Window and rendering objects
     private JFrame window;
     private Thread gameThread;
     private Menu menuScreen;
     private boolean isRunning = true;
 
+    // Current game state and gameplay systems
     private GameState gameState = GameState.MENU;
     private Input input;
     private Camera camera;
@@ -62,13 +69,15 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     private Spawner spawner;
     private Commander commander;
     private List<Minion> minions;
+
+    // Gameplay tuning variables
     private int maxMinions = 75;
-    private int xp = 0;
-    private int upgradeCost = 10;
-    private double normalBoidSpawnRate = 1.0; // multiplier for normal boid swarms
-    private double speedMultiplier = 1.0; // for commander and minions
-    private int minionSpawnRate = 0; // passive minion spawns per second
-    private long lastMinionSpawnTime = 0;
+    private int xp = 0; // experience points earned by defeating enemies
+    private int upgradeCost = 10; // XP needed to trigger an upgrade choice
+    private double normalBoidSpawnRate = 1.0; // how often neutral boid swarms appear
+    private double speedMultiplier = 1.0; // boosts movement speed for player and minions
+    private int minionSpawnRate = 0; // extra minions spawned per second automatically
+    private long lastMinionSpawnTime = 0; // tracks time for passive spawning
     private List<Integer> availableUpgrades = new ArrayList<>();
     private List<Integer> lastAvailableUpgrades = new ArrayList<>();
     
@@ -108,6 +117,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
 
     // Initialize or reset the gameplay session.
     // This creates the player, spawns the starting minion pack, and prepares the world.
+    // Initialize the game world and start a fresh play session.
+    // This sets up the player, camera, map, and initial minion swarm.
     private void initGame() {
         camera = new Camera(getWidth(), getHeight());
         mapGenerator = new MapGenerator();
@@ -155,6 +166,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
     // Update game logic. This only runs while the game is in the PLAYING state.
+    // Update loop for one frame. If the game is not PLAYING, most logic is skipped.
     public void update() {
         if (gameState == GameState.PLAYING) {
             commander.setSpeedMultiplier(speedMultiplier);
@@ -167,6 +179,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             ArrayList<NormalBoid> loadedNormals = mapGenerator.getLoadedNormalBoids();
             ArrayList<EnemyBoid> loadedEnemies = mapGenerator.getLoadedEnemyBoids();
 
+            // Convert neutral boids into player-controlled minions when they are near enough allies or the commander.
+            // This is the main mechanic that grows the player's swarm.
             ArrayList<NormalBoid> converted = new ArrayList<>();
             for (NormalBoid normal : loadedNormals) {
                 // Check for conversion based on nearby minions
@@ -192,6 +206,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             // Update each neutral boid using nearby flockmates.
             // Neighbor lists include other normals, enemies, and minions that are close enough.
             loadedNormals = mapGenerator.getLoadedNormalBoids();
+            // Each neutral boid queries nearby entities and updates itself using flocking behavior.
             for (NormalBoid normal : loadedNormals) {
                 ArrayList<Boid> neighbors = SwarmController.getNeighbors(normal.getPosition(), 120, loadedNormals, loadedEnemies, minions);
                 normal.update(neighbors, mapGenerator);
@@ -308,12 +323,13 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
 
             // Check for upgrade
             if (xp >= upgradeCost) {
+                // When the player earns enough XP, pause the game and show upgrade choices.
                 generateRandomUpgrades();
                 gameState = GameState.UPGRADE;
                 return;
             }
 
-            // Passive minion spawn
+            // Passive minion spawn: adds more allied units over time if permitted.
             long currentTime = System.currentTimeMillis();
             if (minionSpawnRate > 0 && minions.size() < maxMinions && currentTime - lastMinionSpawnTime >= 1000 / minionSpawnRate) {
                 double angle = Math.random() * Math.PI * 2;
@@ -356,6 +372,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         lastAvailableUpgrades = new ArrayList<>(availableUpgrades);
     }
 
+    // Apply the chosen upgrade and reduce XP.
+    // Upgrades improve spawning, speed, or capacity.
     private void applyUpgrade(int upgradeIndex) {
         int upgradeId = availableUpgrades.get(upgradeIndex);
         switch (upgradeId) {
@@ -378,6 +396,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
     // Draw the current game frame. This renders menus, world tiles, boids, and HUD overlays.
+    // Render the current frame based on the active screen state.
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
@@ -454,6 +473,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
 
+    // Determine a formation target for a minion based on the current formation mode.
+    // If formation mode is NORMAL, minions simply follow the commander without fixed slots.
     private Vector getFormationPosition(int minionIndex, Vector commanderPos, Vector commanderVelocity) {
         if (currentFormation == Formation.NORMAL) {
             return null; // Normal formation doesn't use target positions
@@ -587,6 +608,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
     @Override
+    // Handle keyboard input for game controls, including pause and formation switching.
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
             if (gameState == GameState.PLAYING) {
@@ -626,6 +648,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
     }
 
     @Override
+    // Handle mouse clicks for menu buttons, upgrade selection, and pause menu actions.
     public void mousePressed(MouseEvent e) {
         if (gameState == GameState.MENU && menuScreen != null) {
             if (menuScreen.isClicked(e.getX(), e.getY())) {

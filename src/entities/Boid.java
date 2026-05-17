@@ -20,7 +20,12 @@ public class Boid extends Actor{
 		super(x, y, radius, velocity, acceleration);
 	}
 	
-	protected Vector separate(ArrayList<Boid> neighbors) {
+// Boid steering helpers.
+    // These three rules are the heart of flocking behavior:
+    // separate = avoid getting too close to neighbors,
+    // align = match the average heading of neighbors,
+    // cohere = move toward the center of nearby neighbors.
+    protected Vector separate(ArrayList<Boid> neighbors) {
         return Steering.separate(this, neighbors);
     }
 

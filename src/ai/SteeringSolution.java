@@ -67,6 +67,7 @@ public class SteeringSolution {
         return new Vector(0, 0);
     }
 
+    // Seek produces a steering force that points the boid toward a target position.
     public static Vector seek(Boid self, Vector target) {
         Vector desired = new Vector(target.x, target.y);
         desired.subtract(self.getPosition());
@@ -78,6 +79,8 @@ public class SteeringSolution {
         return steer;
     }
 
+    // Convert a desired direction into a steering force limited by the boid's physical abilities.
+    // This prevents sudden, impossible turns.
     private static Vector processSteer(Vector target, int count, Boid self) {
         if (count > 0) {
             target.divide(count);

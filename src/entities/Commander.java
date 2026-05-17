@@ -26,6 +26,8 @@ public class Commander extends Actor {
         maxForce = 0.2;
     }
 
+    // Update the player-controlled commander every frame.
+    // Player input determines the desired direction, and the commander moves if the path is clear.
     public void update(Input input, MapGenerator mapGenerator) {
         Vector direction = input.getDirection();
         if (direction.magnitude() > 0) {

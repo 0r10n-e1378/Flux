@@ -27,6 +27,8 @@ public class Grid {
         cells.computeIfAbsent(key, k -> new ArrayList<>()).add(boid);
     }
 
+    // Find all boids within a radius of a position.
+    // This is used each frame to collect nearby flockmates for steering.
     public ArrayList<Boid> query(Vector position, double radius) {
         ArrayList<Boid> result = new ArrayList<>();
         int minCellX = cellX(position.x - radius);

@@ -162,6 +162,8 @@ public class MapGenerator {
         return dx * dx + dy * dy < radius * radius;
     }
 
+    // Create a map chunk at the given grid coordinates.
+    // Each chunk contains walls and optionally boid spawns.
     private Chunk createChunk(int chunkX, int chunkY, Random rand, boolean generateNormalBoids) {
         Chunk chunk = new Chunk(chunkX, chunkY);
 
@@ -284,6 +286,7 @@ public class MapGenerator {
                     int centerX = chunkX * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                     int centerY = chunkY * CHUNK_SIZE + 80 + rand.nextInt(CHUNK_SIZE - 160);
                     for (int i = 0; i < swarmSize; i++) {
+                        // Create each boid in the swarm with a random starting position and direction.
                         double angle = rand.nextDouble() * Math.PI * 2;
                         double distance = 20 + rand.nextDouble() * 40;
                         int x = (int) Math.round(centerX + Math.cos(angle) * distance);

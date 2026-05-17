@@ -13,6 +13,8 @@ import math.Vector;
 
 public class Steering {
 
+    // High-level steering API used by boid classes.
+    // The actual implementation is provided by SteeringSolution so the rules are easy to inspect separately.
     public static Vector separate(Boid self, ArrayList<Boid> neighbors) {
 
         return SteeringSolution.separate(self, neighbors);
