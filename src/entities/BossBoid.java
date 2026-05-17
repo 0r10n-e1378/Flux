@@ -1,3 +1,9 @@
+/*
+ * BossBoid.java
+ *
+ * Larger boss enemy with high health.
+ * Bosses ignore flocking and focus on chasing the player, with limited wall avoidance.
+ */
 package entities;
 
 import ai.Behavior;

@@ -1,3 +1,9 @@
+/*
+ * Camera.java
+ *
+ * Translates world coordinates into screen coordinates.
+ * The camera centers on a target position so the world can scroll.
+ */
 package core;
 
 public class Camera {

@@ -1,3 +1,9 @@
+/*
+ * NormalBoid.java
+ *
+ * Represents a neutral flocking boid in the world.
+ * Normal boids use separation, alignment, cohesion, and simple wall avoidance.
+ */
 package entities;
 
 import core.Camera;

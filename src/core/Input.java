@@ -1,3 +1,9 @@
+/*
+ * Input.java
+ *
+ * Tracks keyboard input states for movement keys.
+ * Provides a normalized movement vector to drive the player commander.
+ */
 package core;
 
 import math.Vector;

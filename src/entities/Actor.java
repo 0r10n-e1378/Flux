@@ -1,3 +1,9 @@
+/*
+ * Actor.java
+ *
+ * Extends Entity with movement state and steering physics.
+ * Actors have velocity, acceleration, max speed, and max force.
+ */
 package entities;
 
 import math.Vector;

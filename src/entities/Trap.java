@@ -1,3 +1,9 @@
+/*
+ * Trap.java
+ *
+ * Static damage object in the world.
+ * Traps are simple entities with a damage value.
+ */
 package entities;
 
 public class Trap extends Entity{

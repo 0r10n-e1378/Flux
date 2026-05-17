@@ -1,3 +1,9 @@
+/*
+ * EnemyBoid.java
+ *
+ * Base class for hostile boids.
+ * Enemies combine flocking rules with a pursuit target.
+ */
 package entities;
 
 import ai.Behavior;

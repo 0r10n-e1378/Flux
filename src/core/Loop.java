@@ -1,3 +1,9 @@
+/*
+ * Loop.java
+ *
+ * A reusable fixed-step game loop wrapper.
+ * It repeatedly calls a tick callback at a roughly steady pace.
+ */
 package core;
 
 public class Loop implements Runnable {

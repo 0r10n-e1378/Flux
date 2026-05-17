@@ -1,3 +1,9 @@
+/*
+ * Commander.java
+ *
+ * The player's avatar in the game.
+ * The commander responds to keyboard input and moves through the world.
+ */
 package entities;
 
 import core.Camera;

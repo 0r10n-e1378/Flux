@@ -1,3 +1,9 @@
+/*
+ * Grid.java
+ *
+ * Simple spatial grid for proximity queries.
+ * Used to find nearby boids efficiently for flocking calculations.
+ */
 package systems;
 
 import entities.Boid;
@@ -8,6 +14,8 @@ import math.Vector;
 
 public class Grid {
     private final int cellSize;
+
+    // The grid buckets boids into cells so neighbor queries are faster than a full n^2 scan.
     private final Map<Long, ArrayList<Boid>> cells = new HashMap<>();
 
     public Grid(int cellSize) {

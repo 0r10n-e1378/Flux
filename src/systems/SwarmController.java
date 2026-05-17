@@ -1,3 +1,9 @@
+/*
+ * SwarmController.java
+ *
+ * Collects nearby boids into a neighbor list for flocking.
+ * It builds a temporary grid every frame for the query.
+ */
 package systems;
 
 import entities.Boid;

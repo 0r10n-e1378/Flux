@@ -1,3 +1,9 @@
+/*
+ * HUD.java
+ *
+ * Draws the heads-up display for the game.
+ * Shows minion count, formation mode, health, XP, and pause overlay.
+ */
 package ui;
 
 import core.Formation;

@@ -1,3 +1,8 @@
+/*
+ * Menu.java
+ *
+ * Simple title screen menu that starts the game when clicked.
+ */
 package ui;
 
 import java.awt.Color;

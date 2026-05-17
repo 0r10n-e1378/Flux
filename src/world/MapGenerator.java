@@ -1,3 +1,9 @@
+/*
+ * MapGenerator.java
+ *
+ * Procedurally generates map chunks and populates them with obstacles and boid spawns.
+ * It also manages loaded chunks around the player and handles boid spawning logic.
+ */
 package world;
 
 import core.Camera;
@@ -40,6 +46,8 @@ public class MapGenerator {
     private long gameStartTime = System.currentTimeMillis();
     private int bossSpawnCount = 0;
 
+    // Update loaded chunks around the player.
+    // The generator keeps a moving window of nearby chunks and unloads distant ones.
     public void update(double playerX, double playerY) {
         int centerChunkX = (int) Math.floor(playerX / CHUNK_SIZE);
         int centerChunkY = (int) Math.floor(playerY / CHUNK_SIZE);
@@ -167,6 +175,8 @@ public class MapGenerator {
         }
 
         if (generateNormalBoids) {
+            // Spawn neutral boid swarms that roam the world.
+            // The number of swarms scales with the current normal boid spawn rate.
             int swarmCount = (int) (rand.nextInt(2) * normalBoidSpawnRate);
             for (int swarm = 0; swarm < swarmCount; swarm++) {
                 int swarmSize = 5 + rand.nextInt(6);

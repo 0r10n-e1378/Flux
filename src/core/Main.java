@@ -1,3 +1,10 @@
+/*
+ * Main.java
+ *
+ * This is the main game panel and controller for Flux.
+ * It sets up the window, drives the game loop, manages game state,
+ * handles input, renders the world, and updates all entities.
+ */
 package core;
 
 import entities.Boid;
@@ -99,6 +106,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         gameThread.start();
     }
 
+    // Initialize or reset the gameplay session.
+    // This creates the player, spawns the starting minion pack, and prepares the world.
     private void initGame() {
         camera = new Camera(getWidth(), getHeight());
         mapGenerator = new MapGenerator();
@@ -130,8 +139,9 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         requestFocusInWindow();
     }
 
+    @Override
     public void run() {
-        // Basic Game Loop
+        // Main game loop: update game state, then paint the frame.
         while (isRunning) {
             update();
             repaint(); // Calls paintComponent
@@ -144,6 +154,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         }
     }
 
+    // Update game logic. This only runs while the game is in the PLAYING state.
     public void update() {
         if (gameState == GameState.PLAYING) {
             commander.setSpeedMultiplier(speedMultiplier);
@@ -178,12 +189,15 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
                 }
             }
 
+            // Update each neutral boid using nearby flockmates.
+            // Neighbor lists include other normals, enemies, and minions that are close enough.
             loadedNormals = mapGenerator.getLoadedNormalBoids();
             for (NormalBoid normal : loadedNormals) {
                 ArrayList<Boid> neighbors = SwarmController.getNeighbors(normal.getPosition(), 120, loadedNormals, loadedEnemies, minions);
                 normal.update(neighbors, mapGenerator);
             }
 
+            // Bosses move independently toward the commander and can spawn support enemies.
             ArrayList<BossBoid> loadedBosses = new ArrayList<>(mapGenerator.getLoadedBossBoids());
             for (BossBoid boss : loadedBosses) {
                 boss.update(new ArrayList<>(loadedEnemies), commander, mapGenerator);
@@ -225,7 +239,8 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
             ArrayList<Minion> minionsToRemove = new ArrayList<>();
             ArrayList<BossBoid> bossesToRemove = new ArrayList<>();
             
-            // Handle enemy collisions
+            // Handle enemy and boss collisions with the commander and allied minions.
+            // This processes contact damage and removes killed creatures safely.
             for (EnemyBoid enemy : new ArrayList<>(loadedEnemies)) {
                 double distCommander = Vector.distance(enemy.getPosition(), commander.getPosition());
                 if (distCommander < enemy.getRadius() + commander.getRadius()) {
@@ -362,6 +377,7 @@ public class Main extends JPanel implements Runnable, KeyListener, MouseListener
         gameState = GameState.PLAYING;
     }
 
+    // Draw the current game frame. This renders menus, world tiles, boids, and HUD overlays.
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 

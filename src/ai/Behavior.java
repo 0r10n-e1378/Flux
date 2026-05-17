@@ -1,3 +1,9 @@
+/*
+ * Behavior.java
+ *
+ * Simple helper for weighting steering vectors.
+ * This is a tiny utility used to scale behavior contributions.
+ */
 package ai;
 
 import math.Vector;

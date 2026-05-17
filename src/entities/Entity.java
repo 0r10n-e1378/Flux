@@ -1,3 +1,9 @@
+/*
+ * Entity.java
+ *
+ * Base class for all objects that exist in the game world.
+ * Stores position, radius, and provides simple update/draw hooks.
+ */
 package entities;
 
 import core.Camera;

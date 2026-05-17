@@ -1,3 +1,10 @@
+/*
+ * Steering.java
+ *
+ * Public steering API for boids.
+ * This class forwards separation, alignment, and cohesion requests
+ * to the educational implementation in SteeringSolution.
+ */
 package ai;
 
 import entities.Boid;
@@ -7,55 +14,28 @@ import math.Vector;
 public class Steering {
 
     public static Vector separate(Boid self, ArrayList<Boid> neighbors) {
-        Vector steer = new Vector(0, 0);
-        double separation = self.getRadius() * 4.0;
-        int count = 0;
 
-        for (Boid other : neighbors) {
-            if (other == self) {
-                continue;
-            }
-            double d = Vector.distance(self.getPosition(), other.getPosition());
-            if (d > 0 && d < separation) {
-                Vector diff = new Vector(self.getPosition().x, self.getPosition().y);
-                diff.subtract(other.getPosition());
-                diff.normalize();
-                diff.divide(d * d);
-                steer.add(diff);
-                count++;
-            }
-        }
-        return processSteer(steer, count, self);
+        return SteeringSolution.separate(self, neighbors);
+
+        // Vector steer = new Vector(0, 0);
+        // int count = 0;
+        // return processSteer(steer, count, self);
     }
 
     public static Vector align(Boid self, ArrayList<Boid> neighbors) {
-        Vector sum = new Vector(0, 0);
-        int count = 0;
-        for (Boid other : neighbors) {
-            if (other == self) {
-                continue;
-            }
-            sum.add(other.getVelocity());
-            count++;
-        }
-        return processSteer(sum, count, self);
+
+        return SteeringSolution.align(self, neighbors);
+
+        // Vector sum = new Vector(0, 0);
+        // int count = 0;
+        // return processSteer(sum, count, self);
     }
 
     public static Vector cohere(Boid self, ArrayList<Boid> neighbors) {
-        Vector sum = new Vector(0, 0);
-        int count = 0;
-        for (Boid other : neighbors) {
-            if (other == self) {
-                continue;
-            }
-            sum.add(other.getPosition());
-            count++;
-        }
-        if (count > 0) {
-            sum.divide(count);
-            return seek(self, sum);
-        }
-        return new Vector(0, 0);
+
+        return SteeringSolution.cohere(self, neighbors);
+
+        // return new Vector(0, 0);
     }
 
     public static Vector seek(Boid self, Vector target) {

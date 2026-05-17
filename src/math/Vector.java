@@ -1,3 +1,8 @@
+/*
+ * Vector.java
+ *
+ * Basic 2D vector math utility used for movement, steering, and physics.
+ */
 package math;
 
 public class Vector {

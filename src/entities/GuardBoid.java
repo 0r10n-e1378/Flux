@@ -1,3 +1,9 @@
+/*
+ * GuardBoid.java
+ *
+ * A stronger enemy type that follows boss behavior or the commander.
+ * Guard boids still use flocking forces but may target nearby bosses.
+ */
 package entities;
 
 import ai.Behavior;

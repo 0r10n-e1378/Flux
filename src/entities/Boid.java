@@ -1,3 +1,9 @@
+/*
+ * Boid.java
+ *
+ * Common base class for flocking entities.
+ * Provides boid steering helpers and basic shape rendering.
+ */
 package entities;
 
 import ai.Steering;

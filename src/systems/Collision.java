@@ -1,3 +1,9 @@
+/*
+ * Collision.java
+ *
+ * Utility class for basic collision checks.
+ * Currently supports circle-vs-rectangle intersection tests.
+ */
 package systems;
 
 import java.awt.Rectangle;

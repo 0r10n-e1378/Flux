@@ -1,3 +1,9 @@
+/*
+ * Minion.java
+ *
+ * Represents the player's allied swarm units.
+ * Minions use boid flocking plus leader-following and optional formation positioning.
+ */
 package entities;
 
 import java.util.ArrayList;

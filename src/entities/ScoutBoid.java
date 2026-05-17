@@ -1,3 +1,9 @@
+/*
+ * ScoutBoid.java
+ *
+ * Fast, aggressive enemies that charge the commander.
+ * Scouts now also use the same flocking forces as other enemies.
+ */
 package entities;
 
 import ai.Behavior;
@@ -19,10 +25,21 @@ public class ScoutBoid extends EnemyBoid {
 
     @Override
     public void update(ArrayList<EnemyBoid> flock, Commander commander, MapGenerator mapGenerator) {
-        // Scouts charge directly towards commander at max speed
+        ArrayList<Boid> flockAsBoids = new ArrayList<>(flock);
+
+        Vector s = separate(flockAsBoids);
+        Vector a = align(flockAsBoids);
+        Vector c = cohere(flockAsBoids);
         Vector chase = seek(commander.getPosition());
+
+        Behavior.scale(s, 3.0);
+        Behavior.scale(a, 0.7);
+        Behavior.scale(c, 0.4);
         Behavior.scale(chase, 3.0); // Strong chase priority
 
+        push(s);
+        push(a);
+        push(c);
         push(chase);
         push(avoidWalls(mapGenerator));
 

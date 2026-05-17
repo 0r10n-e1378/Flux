@@ -1,3 +1,9 @@
+/*
+ * Spawner.java
+ *
+ * Convenience factory for creating game entities.
+ * Spawner centralizes construction of commanders, minions, and enemies.
+ */
 package world;
 
 import entities.Commander;

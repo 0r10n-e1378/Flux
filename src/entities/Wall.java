@@ -1,3 +1,9 @@
+/*
+ * Wall.java
+ *
+ * A static obstacle in the world that blocks movement.
+ * Walls are rendered as rectangles and checked during collision tests.
+ */
 package entities;
 
 import core.Camera;
